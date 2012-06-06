@@ -1,0 +1,7 @@
+name = Semantic Fields
+description = "Provides semantic HTML output settings for each field type."
+configure = admin/structure/semantic-fields
+package = Fields
+dependencies[] = field
+dependencies[] = field_ui
+core = 7.x

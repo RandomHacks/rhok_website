@@ -1,0 +1,100 @@
+<?php
+
+/**
+ * @file
+ * Display Suite test module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function ds_test_install() {
+  variable_set('ds_extras_region_to_block', TRUE);
+  variable_set('ds_extras_switch_view_mode', TRUE);
+  variable_set('ds_extras_hide_page_title', TRUE);
+  variable_set('ds_extras_field_template', TRUE);
+  variable_set('ds_extras_revision_view_mode', TRUE);
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function ds_test_ctools_plugin_directory($module, $plugin) {
+  // Safety: go away if CTools is not at an appropriate version.
+  if (!module_invoke('ctools', 'api_version', PANELS_REQUIRED_CTOOLS_API)) {
+    return;
+  }
+  if ($module == 'panels') {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Implements hook_ds_layout_info_alter().
+ */
+function ds_test_ds_layout_info_alter(&$layouts) {
+  unset($layouts['ds_3col_stacked_equal_width']);
+}
+
+/**
+ * Implements hook_ds_fields_info().
+ */
+function ds_test_ds_fields_info($entity_type) {
+  if ($entity_type == 'node') {
+    $fields['node']['ds_test_field'] = array(
+      'title' => t('Test code field from hook'),
+      'field_type' => DS_FIELD_TYPE_FUNCTION,
+      'function' => 'dstest_render_test_field',
+    );
+    $fields['node']['ds_test_field_2'] = array(
+      'title' => t('Test code field from hook 2'),
+      'field_type' => DS_FIELD_TYPE_FUNCTION,
+      'function' => 'dstest_render_test_field',
+    );
+
+    return $fields;
+  }
+}
+
+/**
+ * Render the test code field.
+ */
+function dstest_render_test_field($field) {
+  return 'Test code field on node ' . $field['entity']->nid;
+}
+
+/**
+ * Implements hook_ds_fields_info_alter().
+ */
+function ds_test_ds_fields_info_alter(&$fields, $entity_type) {
+  if (isset($fields['ds_test_field_2'])) {
+    $fields['ds_test_field_2']['title'] = 'Field altered';
+  }
+}
+
+/**
+ * Implements hook_ds_layouts().
+ */
+function ds_extras_ds_layout_info() {
+  $path = drupal_get_path('module', 'ds_test');
+  $layouts = array(
+    'dstest_1col' => array(
+      'label' => t('Test One column'),
+      'path' => $path . '/dstest_1col',
+      'regions' => array(
+        'ds_content' => t('Content'),
+      ),
+    ),
+    'dstest_2col' => array(
+      'label' => t('Test Two column'),
+      'path' => $path . '/dstest_2col',
+      'regions' => array(
+        'left' => t('Left'),
+        'right' => t('Right')
+      ),
+      'css' => TRUE,
+    ),
+  );
+
+  return $layouts;
+}

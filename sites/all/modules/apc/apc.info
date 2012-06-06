@@ -1,0 +1,14 @@
+name = Alternative PHP Cache
+description = Enables the Alternative PHP Cache.
+package = Caching
+version = VERSION
+core = 7.x
+files[] = apc.module
+files[] = drupal_apc_cache.inc
+
+; Information added by drupal.org packaging script on 2011-06-21
+version = "7.x-1.0-beta3"
+core = "7.x"
+project = "apc"
+datestamp = "1308690714"
+

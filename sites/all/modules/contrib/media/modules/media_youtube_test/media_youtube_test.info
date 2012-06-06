@@ -1,0 +1,8 @@
+
+name = "Media YouTube Test"
+description = "Tests integration with the http://drupal.org/project/media_youtube module."
+package = Testing
+core = 7.x
+php = 5.2
+dependencies[] = media_youtube
+hidden = TRUE

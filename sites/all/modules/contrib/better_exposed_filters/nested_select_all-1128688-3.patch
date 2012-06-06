@@ -1,0 +1,79 @@
+diff --git a/better_exposed_filters.js b/better_exposed_filters.js
+index 2639626..00735ce 100644
+--- a/better_exposed_filters.js
++++ b/better_exposed_filters.js
+@@ -10,9 +10,10 @@
+       // things going on.
+       var selected = $('.form-checkboxes.bef-select-all-none:not(.bef-processed)');
+       if (selected.length) {
++
+         var selAll = Drupal.t('Select All');
+         var selNone = Drupal.t('Select None');
+-        
++
+         // Set up a prototype link and event handlers
+         var link = $('<a class="bef-toggle" href="#">'+ selAll +'</a>')
+         link.click(function() {
+@@ -20,12 +21,12 @@
+             // Select all the checkboxes
+             $(this)
+               .html(selNone)
+-              .siblings('.bef-checkboxes')
++              .siblings('.bef-checkboxes, .bef-tree')
+                 .find('.form-item input:checkbox').each(function() {
+                   $(this).attr('checked', 'checked');
+                 })
+               .end()
+-  
++
+               // attr() doesn't trigger a change event, so we do it ourselves. But just on 
+               // one checkbox otherwise we have many spinning cursors
+               .find('input[type=checkbox]:first').change() 
+@@ -35,7 +36,7 @@
+             // Unselect all the checkboxes
+             $(this)
+               .html(selAll)
+-              .siblings('.bef-checkboxes')
++              .siblings('.bef-checkboxes, .bef-tree')
+                 .find('.form-item input:checkbox').each(function() {
+                   $(this).attr('checked', '');
+                 })
+@@ -56,7 +57,7 @@
+             // Clone the link prototype and insert into the DOM
+             var newLink = link.clone(true);
+             
+-            newLink.insertBefore($('.bef-checkboxes', this));
++            newLink.insertBefore($('.bef-checkboxes, .bef-tree', this));
+             
+             // If all checkboxes are already checked by default then switch to Select None
+             if ($('input:checkbox:checked', this).length == $('input:checkbox', this).length) {
+diff --git a/better_exposed_filters.theme b/better_exposed_filters.theme
+index e326d61..767d715 100644
+--- a/better_exposed_filters.theme
++++ b/better_exposed_filters.theme
+@@ -43,6 +43,7 @@ function theme_select_as_checkboxes_fieldset($vars) {
+ function theme_select_as_checkboxes($vars) {
+   $element = $vars['element'];
+   if (!empty($element['#bef_nested'])) {
++    $element['#container_class'] = 'form-checkboxes';
+     return theme('select_as_tree', array('element' => $element));
+   }
+   
+@@ -315,12 +316,16 @@ function theme_select_as_tree($vars) {
+   
+   // Add exposed filter description
+   $class = (isset($element['#attributes']['class']) ? $element['#attributes']['class'] : '');
++  if ($element['#container_class'] != '') {
++    $class = trim($class . ' ' . $element['#container_class']);
++  } // if
++    
+   $description = '';
+   if (!empty($element['#description'])) {
+     $description = '<div class="description">'. $element['#description'] .'</div>';
+   }
+   
+-  return "<div $class>$description$output</div>";
++  return '<div class="' . $class . '">' . $description . $output . '</div>';
+ }
+ 
+ /**

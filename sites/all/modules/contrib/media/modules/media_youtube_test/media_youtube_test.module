@@ -1,0 +1,95 @@
+<?php
+
+/**
+ * Implements hook_file_formatter_info().
+ */
+function media_youtube_test_file_formatter_info() {
+  $formatters['media_youtube_test_video'] = array(
+    'label' => t('YouTube Video'),
+    'default settings' => array('width' => '560', 'height' => '340'),
+    'view callback' => 'media_youtube_test_file_formatter_media_youtube_test_video_view',
+    'settings callback' => 'media_youtube_test_file_formatter_media_youtube_test_video_settings',
+  );
+  $formatters['media_youtube_test_image'] = array(
+    'label' => t('YouTube Image'),
+    'default settings' => array('image_style' => ''),
+    'view callback' => 'media_youtube_test_file_formatter_media_youtube_test_image_view',
+    'settings callback' => 'media_youtube_test_file_formatter_media_youtube_test_image_settings',
+  );
+  return $formatters;
+}
+
+
+/**
+ * Implements hook_file_formatter_FORMATTER_view().
+ */
+function media_youtube_test_file_formatter_media_youtube_test_video_view($file, $display, $langcode) {
+  $scheme = file_uri_scheme($file->uri);
+  // WYSIWYG does not yet support video inside a running editor instance.
+  if ($scheme == 'youtube' && empty($file->override['wysiwyg'])) {
+    $element = array(
+      '#theme' => 'media_youtube_video',
+      '#uri' => $file->uri,
+      '#width' => isset($file->override['width']) ? $file->override['width'] : $display['settings']['width'],
+      '#height' => isset($file->override['height']) ? $file->override['height'] : $display['settings']['height'],
+    );
+    return $element;
+  }
+}
+
+/**
+ * Implements hook_file_formatter_FORMATTER_settings().
+ */
+function media_youtube_test_file_formatter_media_youtube_test_video_settings($form, &$form_state, $settings) {
+  $element = array();
+  $element['width'] = array(
+    '#title' => t('Width'),
+    '#type' => 'textfield',
+    '#default_value' => $settings['width'],
+  );
+  $element['height'] = array(
+    '#title' => t('Height'),
+    '#type' => 'textfield',
+    '#default_value' => $settings['height'],
+  );
+  return $element;
+}
+
+/**
+ * Implements hook_file_formatter_FORMATTER_view().
+ */
+function media_youtube_test_file_formatter_media_youtube_test_image_view($file, $display, $langcode) {
+  $scheme = file_uri_scheme($file->uri);
+  if ($scheme == 'youtube') {
+    $wrapper = file_stream_wrapper_get_instance_by_uri($file->uri);
+    if (!empty($display['settings']['image_style'])) {
+      $element = array(
+        '#theme' => 'image_style',
+        '#style_name' => $display['settings']['image_style'],
+        '#path' => $wrapper->getLocalThumbnailPath(),
+      );
+    }
+    else {
+      $element = array(
+        '#theme' => 'image',
+        '#path' => $wrapper->getOriginalThumbnailPath(),
+      );
+    }
+    return $element;
+  }
+}
+
+/**
+ * Implements hook_file_formatter_FORMATTER_settings().
+ */
+function media_youtube_test_file_formatter_media_youtube_test_image_settings($form, &$form_state, $settings) {
+  $element = array();
+  $element['image_style'] = array(
+    '#title' => t('Image style'),
+    '#type' => 'select',
+    '#options' => image_style_options(FALSE),
+    '#default_value' => $settings['image_style'],
+    '#empty_option' => t('None (original image)'),
+  );
+  return $element;
+}

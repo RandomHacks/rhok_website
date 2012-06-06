@@ -1,0 +1,8 @@
+; $Id$
+
+name = Styles
+description = Bundles similar display formatters together.
+package = Styles
+core = 7.x
+files[] = styles.module
+files[] = includes/Styles.inc

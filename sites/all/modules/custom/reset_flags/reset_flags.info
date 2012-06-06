@@ -1,0 +1,7 @@
+name = Flag Reset
+description = Adds menu callback to reset a flag on a given node.
+core = 7.x
+dependencies[] = flag
+package = Flags
+
+files[] = reset_flags.module

@@ -1,0 +1,5 @@
+name = Duplicate Check
+description = Checks for similar content at beginning of node add form
+core = 7.x
+
+files[] = duplicate_check.module

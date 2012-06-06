@@ -1,0 +1,30 @@
+diff --git a/link.module b/link.module
+index 1b08f7b..bc433c4 100644
+--- a/link.module
++++ b/link.module
+@@ -851,10 +851,24 @@ function link_validate_url($text) {
+   $internal_pattern = "/^([a-z0-9". $LINK_ICHARS ."_\-+\[\]]+)";
+   $internal_pattern_file = "/^([a-z0-9". $LINK_ICHARS ."_\-+\[\]\.]+)$/i";
+ 
++  /**
++   * Patterns matching character sets defined in RFC 3986
++   * http://tools.ietf.org/html/rfc3986#appendix-A
++   */
++
++  $rfc3986 = array(
++    'alpha' => 'a-zA-Z',
++    'digit' => '0-9',
++    'sub-delims' => '\!$&\'\(\)\*\+\,;=',
++  );
++  $rfc3986['unreserved'] = $rfc3986['alpha'] . $rfc3986['digit'] . '\-\._~';
++  $rfc3986['pchar'] = $rfc3986['unreserved'] . $rfc3986['sub-delims'] . '\:@';
++  $rfc3986['fragment'] = $rfc3986['pchar'] . '\/\?';
++
+   $directories = "(\/[a-z0-9". $LINK_ICHARS ."_\-\.~+%=&,$'!():;*@\[\]]*)*";
+   // Yes, four backslashes == a single backslash.
+   $query = "(\/?\?([?a-z0-9". $LINK_ICHARS ."+_|\-\.\/\\\\%=&,$'():;*@\[\]{} ]*))";
+-  $anchor = "(#[a-z0-9". $LINK_ICHARS ."_\-\.~+%=&,$'():;*@\[\]\/\?]*)";
++  $anchor = '(#[' . $rfc3986['fragment'] . ']*)';
+ 
+   // The rest of the path for a standard URL.
+   $end = $directories .'?'. $query .'?'. $anchor .'?'.'$/i';

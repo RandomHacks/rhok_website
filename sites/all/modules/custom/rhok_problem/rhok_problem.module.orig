@@ -1,0 +1,357 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function rhok_problem_menu() {
+
+  $items = array();
+
+  $items['node/%node/fork'] = array(
+    'title' => 'Fork Problem',
+    'title callback' => 'rhok_problem_fork_title',
+    'title arguments' => array(1),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('rhok_problem_fork', 1),
+    'access arguments' => array('create problem content'),
+  );
+  
+  $items['node/%node/recommend-solution'] = array(
+    'title' => 'Recommend a Solution',
+    'title callback' => 'rhok_problem_recommend_solution_title',
+    'title arguments' => array(1),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('rhok_problem_recommend_solution', 1),
+    'access arguments' => array('access content'),
+  );
+
+  return $items;  
+
+} // rhok_problem_menu
+
+/**
+ * Provides title to solution recommendation form.
+ */
+function rhok_problem_recommend_solution_title($node) {
+
+  return 'Recommend a Solution for Problem ' . $node->title;
+
+} // rhok_problem_recommend_solution_title
+
+/**
+ * Provides title for fork form.
+ */
+function rhok_problem_fork_title($node) {
+
+  return 'Fork Problem ' . $node->title;
+
+} // rhok_problem_fork_title
+
+/**
+ * Provides solution recommendation form.
+ */
+function rhok_problem_recommend_solution($form, &$form_state, $node) {
+
+  $form = array();
+
+  $options = array();
+  $result = db_query("SELECT title, nid FROM {node} WHERE type = 'solution' AND status = 1");
+
+  foreach ($result as $option) {
+    $options[$option->nid] = $option->title;
+  } // foreach
+
+  $form['nid'] = array(
+    '#type' => 'value',
+    '#value' => $node->nid,
+  );
+
+  $form['solution_nid'] = array(
+    '#type' => 'select',
+    '#title' => t('Recommended Solution'),
+    '#options' => $options,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Recommend'),
+  );
+  
+  $form['cancel'] = array(
+    '#type' => 'submit',
+    '#value' => t('Cancel'),
+  );
+  
+  return $form;
+
+} // rhok_problem_recommend_solution
+
+/**
+ * Handles solution recommendation form submission.
+ */
+function rhok_problem_recommend_solution_submit($form, &$form_state) {
+
+  global $user;
+
+  if ($form_state['triggering_element']['#value'] == t('Cancel')) {
+
+    drupal_set_message(t('Solution recommendation cancelled'));
+    drupal_goto('node/' . $form_state['values']['nid']);
+
+  } // if
+  else {
+
+    $node = node_load($form_state['values']['nid']);
+
+    if (!is_array($node->field_solution)) {
+      $node->field_solution = array();
+      $node->field_solution[$node->language] = array();
+    } // if
+
+    $already_recommended = FALSE;
+
+    foreach ($node->field_solution[$node->language] as $solution) {
+
+      if ($solution['nid'] == $form_state['values']['solution_nid']) {
+        $already_recommended = TRUE;
+      } // if
+
+    } // foreach
+    
+    if (!$already_recommended) {
+      $node->field_solution[$node->language][] = array('nid' => $form_state['values']['solution_nid']);
+      node_save($node);
+    } // if
+
+    drupal_set_message(t('Solution recommendation added'));
+    drupal_goto('node/' . $node->nid);
+
+  } // else
+
+} // rhok_problem_recommend_solution_submit
+
+/**
+ * Provides fork form.
+ */
+function rhok_problem_fork($form, &$form_state, $node) {
+
+  $form = array();
+  
+  $form['nid'] = array(
+    '#type' => 'value',
+    '#value' => $node->nid,
+  );
+  
+  $form['sure'] = array(
+    '#type' => 'item',
+    '#markup' => '<p>' . t('Are you sure you want to fork this problem?') . '</p>',
+  );
+  
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Fork'),
+  );
+  
+  $form['cancel'] = array(
+    '#type' => 'submit',
+    '#value' => t('Cancel'),
+  );
+  
+  return $form;
+
+} // rhok_problem_fork
+
+/**
+ * Handles fork form submission.
+ */
+function rhok_problem_fork_submit($form, &$form_state) {
+
+  global $user;
+
+  if ($form_state['triggering_element']['#value'] == t('Cancel')) {
+
+    drupal_set_message(t('Fork cancelled'));
+    drupal_goto('node/' . $form_state['values']['nid']);
+  
+  } // if
+  else {
+  
+    $node = node_load($form_state['values']['nid']);
+    
+    unset($node->nid);
+    unset($node->vid);
+    
+    $node->uid = $user->uid;
+    $node->name = $user->name;
+    
+    node_save($node);
+    
+    drupal_set_message(t('Fork created'));
+    drupal_goto('node/' . $node->nid . '/edit');
+
+  } // else
+
+} // rhok_problem_fork_submit
+
+/**
+ * Implements hook_form_alter().
+ */
+function rhok_problem_form_alter(&$form, &$form_state, $form_id) {
+
+  global $user;
+  
+  if ($form_id == 'problem_node_form') {
+
+    $form['revision_information']['revision']['#default_value'] = TRUE;
+    $form['revision_information']['revision']['#access'] = FALSE;
+
+    drupal_add_library('system', 'ui.tabs');
+
+    $revision = $form['field_major_revision'];
+    unset($form['field_major_revision']);
+
+    $revision[$revision['#language']]['#default_value'] = 0;
+    $form['revision_information']['field_major_revision'] = $revision;
+
+    if (!isset($form['#node']->nid) || $form['#node']->nid == 0) {
+
+      // Add field to set creator as owner
+
+      $form['field_owner_self'] = array(
+        '#type' => 'hidden',
+        '#value' => 1,
+      );
+
+      $form['field_favored_problem']['#access'] = FALSE;
+
+    } // if
+    
+    // if (isset($user->uid) && $user->uid != 1) {
+
+      $form['field_solution']['#access'] = FALSE;
+
+    // } // if
+
+  } // if
+  else if ($form_id == 'solution_node_form') {
+
+    $form['revision_information']['revision']['#default_value'] = TRUE;
+    $form['revision_information']['revision']['#access'] = FALSE;
+
+    $revision = $form['field_major_revision'];
+    unset($form['field_major_revision']);
+
+    $revision[$revision['#language']]['#default_value'] = 0;
+    $form['revision_information']['field_major_revision'] = $revision;
+  
+  } // else if
+  else if ($form_id == 'diff_node_revisions') {
+  
+    $node = node_load($form['nid']['#value']);
+    
+    if ($node->type == 'problem' || $node->type == 'solution') {
+
+      foreach ($form['info'] as $vid => $info) {
+
+        $revision = node_load($form['nid']['#value'], $vid);
+
+        if (
+          (isset($revision->field_major_revision[$revision->language])) &&
+          ($revision->field_major_revision[$revision->language][0]['value'] == 1)
+        ) {
+          $major_minor = t('(Major)');
+        } // if
+        else {
+          $major_minor = t('(Minor)');
+        } // else
+    
+        $form['info'][$vid]['#markup'] = '<span class="major-minor">' . $major_minor . '</span> ' . $form['info'][$vid]['#markup'];
+    
+      } // foreach
+
+    } // if
+  
+  } // else if
+
+} // rhok_problem_form_alter
+
+/**
+ * Implements hook_comment_insert().
+ */
+function rhok_problem_comment_insert($comment) {
+  
+  if ($comment->node_type == 'comment_node_problem') {
+  
+    $node = node_load($comment->nid);
+    $node->revision = TRUE;
+    node_save($node);
+  
+  } // if
+
+} // rhok_problem_comment_insert
+
+/**
+ * Implements hook_node_insert().
+ */
+function rhok_problem_node_insert($node) {
+
+  global $user;
+
+  if (isset($node->field_owner_self) && $node->field_owner_self == 1) {
+
+    flag('flag', 'owner', $node->nid, $user, TRUE);
+
+  } // if
+
+} // rhok_problem_node_insert
+
+/**
+ * Implements hook_node_view().
+ */
+function rhok_problem_node_view($node, $view_mode, $langcode) {
+
+  if ($node->type == 'problem') {
+
+    $revisions = node_revision_list($node);
+
+    $revision_markup = t('Revision #@count', array('@count' => count($revisions)));
+
+    if (count($revisions) > 1) {
+      $revision_markup = l($revision_markup, 'node/' . $node->nid . '/revisions');
+    } // if
+
+    $node->content['revision_number'] = array(
+      '#markup' => '<span class="revision-number">' . $revision_markup . '</span>',
+      '#weight' => -100,
+    );
+
+    $node->content['fork'] = array(
+      '#markup' => l('Fork', 'node/' . $node->nid . '/fork', array('attributes' => array('class' => 'fork'))),
+      '#weight' => -99,
+    );
+    
+    $node->content['recommend_solution'] = array(
+      '#markup' => l('Recommend a Solution', 'node/' . $node->nid . '/recommend-solution', array('attributes' => array('class' => 'recommend-solution'))),
+      '#weight' => -99,
+    );
+
+    $node->flag_counts = flag_get_counts('node', $node->nid);
+
+    if ($node->flag_counts['out_of_scope'] >= 2){
+
+      $message = 'This problem has been marked as out-of-scope and is under review.';
+
+      if (user_access('administer flags')) {
+        $message .= ' ' . l('Reset flags', 'flag-reset/2/' . $node->nid, array('query' => drupal_get_destination()));
+      } // if
+
+      drupal_set_message($message, 'warning');
+
+    } // if
+
+    unset($node->content['links']['flag']['#links']['flag-owner']);
+    unset($node->content['links']['flag']['#links']['flag-help']);
+
+  } // if
+
+} // rhok_problem_node_view

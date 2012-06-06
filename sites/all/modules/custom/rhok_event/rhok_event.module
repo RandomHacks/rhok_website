@@ -1,0 +1,136 @@
+<?php
+
+/**
+ * Implements hook_node_view().
+ */
+function rhok_event_node_view($node, $view_mode, $langcode) {
+
+  global $user;
+
+  if ($node->type == 'event') {
+  
+    /**
+     * Add link to add blog post if this person has access.
+     */
+
+    $is_lead = FALSE;
+
+    if ($user->uid == $node->uid || user_access('edit any event content')) {
+      $is_lead = TRUE;
+    } // if
+    else {
+
+      foreach ($node->field_event_leads[$node->language] as $lead) {
+  
+        if ($lead['uid'] == $user->uid) {
+          $is_lead = TRUE;
+        } // if
+  
+      } // foreach
+
+    } // else
+
+    if ($is_lead) {
+
+      $node->content['blog_post_link'] = array(
+        '#markup' => '<p>' . l('Add Event Update', 'node/add/blog-post', array('attributes' => array('class' => 'add-button'), 'query' => array('related' => $node->nid))) . '</p>',
+        '#weight' => -99,
+      );
+
+    } // if
+
+  } // if
+  else if ($node->type == 'solution') {
+  
+    $is_lead = FALSE;
+  
+    if ($user->uid == $node->uid || user_access('edit any event content')) {
+      $is_lead = TRUE;
+    } // if
+  
+    if ($is_lead) {
+
+      $node->content['blog_post_link'] = array(
+        '#markup' => '<p>' . l('Add Solution Update', 'node/add/blog-post', array('attributes' => array('class' => 'add-button'), 'query' => array('related' => $node->nid))) . '</p>',
+        '#weight' => -99,
+      );
+
+    } // if
+  
+  } // else if 
+
+} // rhok_event_node_view
+
+/**
+ * Implements hook_form_alter().
+ */
+function rhok_event_form_alter(&$form, &$form_state, $form_id) {
+
+  if ($form_id == 'event_node_form') {
+  
+    $form['note'] = array(
+      '#markup' => '<p>After saving this event, please ' . l('add any related local sponsors', 'node/add/local-sponsor') . '.</p>',
+      '#weight' => 20,
+    );
+  
+  } // if
+  else if ($form_id == 'blog_post_node_form') {
+
+    $related = intval($_GET['related']);
+  
+    if ($related > 0) {
+      $form['field_blog_related']['und'][0]['nid']['#default_value'] = $related;
+      $form['field_blog_related']['und'][0]['nid']['#disabled'] = TRUE;
+    } // if
+    else if (!user_access('edit any blog_post content')) {
+      drupal_goto();
+    } // else if
+
+  } // else if
+
+} // rhok_event_form_alter
+
+/**
+ * Implements hook_node_access_records().
+ */
+
+function rhok_event_node_access_records($node) {
+
+  $grants = array();
+
+  if ($node->type == 'event') {
+
+    foreach ($node->field_event_leads[$node->language] as $lead) {
+
+      $grants[] = array(
+        'realm' => 'rhok_event_organizer', 
+        'gid' => $lead['uid'], 
+        'grant_view' => 1, 
+        'grant_update' => 1, 
+        'grant_delete' => 0,
+        'priority' => 0,
+      );
+
+    } // foreach
+
+  } // if
+  
+  return $grants;
+
+} // rhok_event_node_access_records
+
+
+/**
+ * Implements hook_node_grants().
+ */
+
+/*
+plethora mod because it was breaking the event page listing.
+*/
+/*
+function rhok_event_node_grants($account, $op) {
+
+  return array('rhok_event_organizer' => array($account->uid));
+
+} // rhok_event_node_grants
+*/

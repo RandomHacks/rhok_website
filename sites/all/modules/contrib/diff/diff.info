@@ -1,0 +1,6 @@
+; $Id$
+name = Diff
+description = Show difference between node revisions.
+core = 7.x
+
+files[] = DiffEngine.php

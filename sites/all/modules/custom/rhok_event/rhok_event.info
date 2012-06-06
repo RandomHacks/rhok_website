@@ -1,0 +1,5 @@
+name = RHoK Event
+description = Event customizations.
+core = 7.x
+
+files[] = rhok_event.module

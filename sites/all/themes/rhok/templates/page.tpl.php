@@ -1,0 +1,106 @@
+<?php
+  // Add Typekit javascript
+  drupal_add_js('http://use.typekit.com/cwy0rsb.js', 'external');
+  drupal_add_js('try{Typekit.load();}catch(e){}', 'inline');
+  //drupal_add_js('http://s7.addthis.com/js/250/addthis_widget.js#pubid=xa-4d82820c77765d51', 'external');
+?>
+
+<div id="header" class="clearfix">
+  <div class="container">
+    <h1 id="logo">
+      <a href="<?php print $base_path; ?>"><?php print $site_name; ?></a>
+    </h1>
+    <?php if ($page['header']) { ?>
+        <?php print render($page['header']); ?>
+    <? } // end header ?>
+  </div>
+  <div id="navigation">
+    <div class="container clearfix">
+      <?php if ($page['navigation']) { ?>
+          <?php print render($page['navigation']); ?>
+      <? } // end header ?>
+    </div>
+  </div>
+</div>
+
+<?php if ($breadcrumb): ?>
+  <div id="breadcrumb">
+    <div class="container clearfix">
+      <?php print $breadcrumb; ?>
+    </div>
+  </div>
+<?php endif; ?>
+
+<?php if ($page['content_header']) { ?>
+  <div id="content-header">
+    <div class="container clearfix">
+      <?php print render($page['content_header']); ?>
+    </div>
+  </div>
+<? } ?>
+
+<?php if ($page['content_subhead']) { ?>
+  <div id="content-subhead">
+    <div class="container clearfix">
+      <?php print render($page['content_subhead']); ?>
+    </div>
+  </div>
+<? } ?>
+
+<?php if (render($tabs)) { ?>
+  <div id="tabs">
+    <div class="container clearfix">
+      <?php print render($tabs); ?>
+    </div>
+  </div>
+<? } // end tabs ?>
+
+
+    
+<div id="content-wrapper">
+  <div class="clearfix container">
+    <?php if (!$is_front || $page['content_top'] || $messages) { ?>
+      <div id="content-top">
+        <div class="clearfix">
+          
+          <?php if ($messages) { ?>
+            <div id="messages">
+              <?php print render($messages); ?>
+            </div>
+          <? } // end messages ?>
+          
+          <?php if ($page['content_top']) { ?>
+            <?php print render($page['content_top']); ?>
+          <? } ?>
+          <?php if (!$is_front) { ?>
+            <h1 class="page-title"><?php print $title; ?></h1> 
+          <? } ?>
+        </div>
+      </div>
+    <? } // end content-top ?>
+  
+    <div id="content">
+      <?php print render($page['content']); ?>
+    </div>
+
+    <?php if ($page['sidebar_first']) { ?>
+      <div id="sidebar-first">
+        <?php print render($page['sidebar_first']); ?>
+      </div>
+    <? } // end sidebar_first ?>
+  </div>
+</div>
+  
+<div id="footer" class="clearfix">
+  <div class="container">
+    <?php print render($page['footer']); ?>
+  </div>
+</div>
+
+<?php if ($page['admin_footer']) { ?>
+  <div id="admin-footer">
+    <div class="container clearfix">
+      <?php print render($page['admin_footer']); ?>
+    </div>
+  </div>
+<?php } ?>

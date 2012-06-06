@@ -1,0 +1,52 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function reset_flags_menu() {
+
+  $items = array();
+
+  $items['flag-reset/%/%'] = array(
+    'title' => 'Reset flags',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('reset_flags_confirm', 1, 2),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer flags'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+
+} // reset_flags_menu
+
+function reset_flags_confirm($form, &$form_state, $fid, $nid) {
+
+  $form['#fid'] = $fid;
+  $form['#nid'] = $nid;
+
+  $question = t('Are you sure you want to unflag this item?');
+  $path = isset($_GET['destination']) ? $_GET['destination'] : '<front>';
+
+  return confirm_form($form, $question, $path);
+
+} // reset_flags_confirm
+
+function reset_flags_confirm_submit($form, &$form_state) {
+
+  $fid = $form['#fid'];
+  $nid = $form['#nid'];
+
+  $flag = flag_get_flag(NULL, $fid);
+
+  flag_reset_flag($flag, $nid);
+
+  db_update('flag_counts')
+    ->fields(array('count' => 0))
+    ->condition('fid', $fid)
+    ->condition('content_id', $nid)
+    ->execute();
+  
+  drupal_set_message('Item has been unflagged');
+
+} // reset_flags_confirm_submit

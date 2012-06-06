@@ -1,0 +1,8 @@
+
+name = "LESS CSS Preprocessor"
+description = "Allows themes or modules to use LESS files."
+
+core = 7.x
+
+files[] = less.module
+files[] = lessphp/lessc.inc.php

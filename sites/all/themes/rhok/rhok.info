@@ -1,0 +1,19 @@
+name = RHoK
+description = Custom theme for RHoK.
+core = 7.x
+
+regions[header]                 = "Header"
+regions[navigation]             = "Navigation"
+regions[content_header]         = "Content Header"
+regions[content_subhead]        = "Content Subhead"
+regions[content_top]            = "Content Top"
+regions[content]                = "Content"
+regions[sidebar_first]          = "Sidebar First"
+regions[footer]                 = "Footer"
+regions[admin_footer]           = "Admin Footer"
+regions[page_bottom]            = "Page Bottom"
+
+stylesheets[all][] = css/base.css
+stylesheets[all][] = css/style.less
+
+scripts[] = js/main.js

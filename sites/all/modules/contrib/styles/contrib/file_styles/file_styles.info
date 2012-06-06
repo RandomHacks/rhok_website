@@ -1,0 +1,11 @@
+; $Id$
+
+name = File Styles
+description = Allows preset transformation of files and media for display.
+package = Styles
+core = 7.x
+files[] = file_styles.module
+files[] = file_styles.admin.inc
+files[] = includes/styles/FileStyles.inc
+dependencies[] = styles
+dependencies[] = image

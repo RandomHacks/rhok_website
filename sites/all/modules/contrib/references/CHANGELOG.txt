@@ -1,0 +1,6 @@
+References 7.x-2.0-beta2
+========================
+
+Initial beta release (starting directly at beta2, the beta1 git tag got borched)
+
+Note : If you installed a previous 7.x-2.x dev version, it is recommended to clear your sites caches after deploying this release.

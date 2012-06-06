@@ -1,0 +1,45 @@
+From 656e7d4d5ab7c1e2ebf30c99b474c9d04d1686a9 Mon Sep 17 00:00:00 2001
+From: Ben Chodoroff <bc@thermitic.net>
+Date: Wed, 4 May 2011 17:30:08 -0400
+Subject: [PATCH] adapt 1064502_multivalue_preview.patch for new file stuff
+
+---
+ includes/media.fields.inc |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/includes/media.fields.inc b/includes/media.fields.inc
+index 927eec7..43ae1d7 100644
+--- a/includes/media.fields.inc
++++ b/includes/media.fields.inc
+@@ -115,7 +115,7 @@ function media_field_prepare_view($entity_type, $entities, $field, $instances, $
+   foreach ($entities as $id => $entity) {
+     foreach ($items[$id] as $delta => $item) {
+       if (is_array($item) && !empty($item['fid'])) {
+-        $items[$id][$delta] = $files[$item['fid']];
++        $items[$id][$delta]['file'] = $files[$item['fid']];
+       }
+     }
+   }
+@@ -131,17 +131,15 @@ function media_field_formatter_view($entity_type, $entity, $field, $instance, $l
+     foreach ($items as $delta => $item) {
+       $element[$delta] = array(
+         '#theme' => 'media_formatter_large_icon',
+-        '#file' => $item,
++        '#file' => $item['file'],
+       );
+     }
+     return $element;
+   }
+ 
+-  // @todo media_field_prepare_view() ensures that $items is an array of loaded
+-  //   files, but that will need to change. See that function for details.
+   $files = array();
+-  foreach ($items as $file) {
+-    $files[$file->fid] = $file;
++  foreach ($items as $delta => $item) {
++    $files[$item['fid']] = $item['file'];
+   }
+   return file_view_multiple($files, $display['type'], 0, $langcode);
+ }
+-- 
+1.7.2.3

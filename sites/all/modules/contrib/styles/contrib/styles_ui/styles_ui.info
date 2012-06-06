@@ -1,0 +1,8 @@
+; $Id$
+
+name = Styles UI
+description = Allows administration of the Styles modules.
+package = Styles
+core = 7.x
+files[] = styles_ui.admin.inc
+dependencies[] = styles

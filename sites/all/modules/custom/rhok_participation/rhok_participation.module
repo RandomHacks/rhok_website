@@ -1,0 +1,127 @@
+<?php
+
+/**
+ * Implements hook_block_info().
+ */
+function rhok_participation_block_info() {
+
+  $blocks = array();
+
+  $blocks['rhok_participation'] = array(
+    'info' => t('Participation'), 
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  
+  $blocks['rhok_participant_count'] = array(
+    'info' => t('Participant Count'), 
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+
+  return $blocks;
+
+} // rhok_participation_block_info
+
+/**
+ * Implements hook_block_view().
+ */
+function rhok_participation_block_view($delta = '') {
+
+  $block = array();
+
+  switch ($delta) {
+
+    case 'rhok_participation':
+      $block['subject'] = t('Participation');
+      $block['content'] = rhok_participation_display();
+      break;
+
+    case 'rhok_participant_count':
+      $block['subject'] = '';
+      $block['content'] = rhok_participation_count_display();
+      break;
+
+  } // switch
+
+  return $block;
+
+} // rhok_participation_block_view
+
+function rhok_participation_theme() {
+
+  return array(
+    'rhok_participation_block' => array(
+      'variables' => array('members' => 0, 'problems' => 0, 'events' => 0, 'solutions' => 0),
+      'template' => 'rhok_participation_block',
+    ),
+  );
+
+} // rhok_participation
+
+function rhok_participation_display() {
+  
+  $members = db_select('users')
+    ->condition('status', 1)
+    ->countQuery()->execute()->fetchField();
+    
+  $problems = db_select('node')
+    ->condition('status', 1)
+    ->condition('type', 'problem')
+    ->countQuery()->execute()->fetchField();
+  
+  $events = db_select('node')
+    ->condition('status', 1)
+    ->condition('type', 'event')
+    ->countQuery()->execute()->fetchField();
+
+  $solutions = db_select('node')
+    ->condition('status', 1)
+    ->condition('type', 'solution')
+    ->countQuery()->execute()->fetchField();
+
+  return theme('rhok_participation_block', array('members' => $members, 'problems' => $problems, 'events' => $events, 'solutions' => $solutions));
+
+} // rhok_participation_display
+
+function rhok_participation_count_display() {
+
+  global $user;
+
+  $nid = arg(1);
+
+  if (
+    (arg(0) == 'node') &&
+    (intval($nid) > 0)
+  ) {
+
+    $flag_counts = flag_get_counts('node', $nid); 
+    $count = 0;
+
+    if (isset($flag_counts['owner'])) {
+      $count += $flag_counts['owner']; 
+    } // if
+
+    if (isset($flag_counts['help'])) {
+      $count += $flag_counts['help']; 
+    } // if
+
+    if ($user->uid > 0) {
+
+      $flag = flag_get_flag('help');
+
+      $action = 'flag';
+      $flags = flag_get_user_flags('node', $nid, $user->uid);
+      if (isset($flags['help'])) {
+        $action = 'unflag';
+      } // if
+
+      return '<span class="participants"><span class="number">' . $count . '</span> ' . format_plural($count, 'Participant', 'Participants') . '</span>' . $flag->theme($action, $nid);
+
+    } // if
+
+    return '<span class="participants"><span class="number">' . $count . '</span> ' . format_plural($count, 'Participant', 'Participants') . '</span><span class="flag-wrapper flag-help">' . l('Get Involved', 'user/login', array('query' => drupal_get_destination(), 'attributes' => array('class' => ''))) . '</span>';
+
+  } // if
+  
+  return '';
+    
+} // rhok_participation_count_display

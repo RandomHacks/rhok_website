@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RHoK Partner Feature feature.
+ */
+
+include_once('rhok_partner_feature.features.inc');

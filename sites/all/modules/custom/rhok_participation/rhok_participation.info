@@ -1,0 +1,5 @@
+name = RHoK Participation
+description = Participation block.
+core = 7.x
+
+files[] = rhok_participation.module

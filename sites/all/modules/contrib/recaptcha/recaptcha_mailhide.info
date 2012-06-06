@@ -1,0 +1,7 @@
+; $Id$
+name = reCAPTCHA Mailhide
+description = "Uses the reCAPTCHA web service to protect email addresses."
+package = "Spam control"
+core = 7.x
+ 
+files[] = recaptcha_mailhide.module

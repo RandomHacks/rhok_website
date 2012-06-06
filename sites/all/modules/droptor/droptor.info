@@ -1,0 +1,16 @@
+name = "Droptor"
+description = Plug-in for Droptor.com, Drupal site organization, monitoring, management and best practices
+core = 7.x
+package = Security
+dependencies[] = update
+configure = admin/config/system/droptor
+
+files[] = droptor.module
+files[] = droptor_feed.inc
+files[] = droptor_form.inc
+; Information added by drupal.org packaging script on 2011-09-21
+version = "7.x-3.x-dev"
+core = "7.x"
+project = "droptor"
+datestamp = "1316564308"
+

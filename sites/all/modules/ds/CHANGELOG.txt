@@ -1,0 +1,69 @@
+-------------------------------------------------------------------------------------
+7.x-1.3 03/08/2011
+-------------------------------------------------------------------------------------
+- #1238048 by stalski: Moving fieldsets into another region leaves children behind.
+- #1234792 by swentel: group search results by type.
+- #1194252 by swentel and zuuperman: hide colons on labels for reset and expert.
+- #1193114 by swentel: make sure features don't list Display suite x times.
+- #1192744 by swentel and mrfelton: load comments on nodes on views listings.
+- #1214238 by dylon: fix type in ds.field_ui.inc. 
+- #1207718 by BTMash: fix white page and facet api.
+- #1218464 by muka: Better regular expression for finding themes.
+- #1218636 by swentel: fix issue in ds-build to create tpl files with hyphens.
+- #1146216 by swentel: preprocess fields via UI and fix taxonomy term preprocess.
+- #1221842 by swentel: fix minor warnings in schema definition.
+- #1191336 by swentel: override display of node revisions.
+- #1227986 by swentel: use theme key of layout plugin.
+- #1222412 by swentel: extend page title options with substitutions.
+- #1225588 by swentel: add contextual links on block field.
+- #1233958 by swentel: add destination to 'Manage region styles'.
+- #1218474 by muka, swentel: add field links directly from field UI.
+- Ability to limit number of items per formatter.
+- Use $search_result variable for user page as well so empty doesn't show up.
+- Panel view modes module: use Panels layouts to manage the view modes.
+- Hide sidebar blocks option.
+- Views Field UI fields mode.
+
+-------------------------------------------------------------------------------------
+7.x-1.2 14/06/2011
+-------------------------------------------------------------------------------------
+- #1187960 by askibinski: trigger solr on empty search.
+- #1184646 by swentel: make fields in non existing regions are visible in the UI.
+- #1166928 by swentel: support for gravatar.
+- #1175414 by swentel: fix issue with regions having dashes/underscores.
+- #1171408 by mverbaar: Add starter template and drush integration.
+- #1143070 by neurojavi: Check on taxonomy formatters/view modes.
+- #1152232 by yoroy: remove unnecessary checkbox descriptions.
+- #1151858 by neurojavi: add file entity support to ds views plugin.
+- #1155148 by swentel: fix notices on entities.
+- #1136542 by swentel: add micro support.
+- #1160014 by swentel: add option to remove all theme hook suggestions.
+- #1163046 by swentel: map old regions to new regions when changing layout.
+- Cleanup admin settings screen of Extras module.
+- Support for Panels layouts.
+- New feature: Dynamic content field.
+- New Extras feature: extra fields.
+- New Extras feature: contextual links to manage display screens.
+- New Extras feature: switch view mode fields through ajax.
+- Fix notices in fields and view modes form on fieldable key.
+
+-------------------------------------------------------------------------------------
+7.x-1.1 09/05/2011
+-------------------------------------------------------------------------------------
+- #1150536 by swentel: fix apachesolr changes in DS search.
+- #1053912 by swentel and jyve: change field labels, classes and wrappers per mode. 
+- #1142572 by swentel: add ability to hide the page title on full node view.
+- #1132682 by swentel: add hook_ds_layout_info_alter().
+- #1129208 by swentel: support for Fivestar in Extras module.
+- #1129228 by netsensei and swentel: create separate render function.
+- #1131364 by BrockBoland: fix documentation in ds.api.php for use_token.
+- #1124346 by codycraven and swentel: Fix racing conditions on additional settings.
+- #1125250 by swentel: check on default user image.
+- Use another function to preprocess a view.
+- Optimized wording in extras settings screen.
+- Remove Obsolete CVS $Id$ tags and .DS_Store directory.
+
+-------------------------------------------------------------------------------------
+7.x-1.0 09/04/2011
+-------------------------------------------------------------------------------------
+- First official 1.0 release for D7.

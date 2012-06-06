@@ -1,0 +1,11 @@
+; $Id$
+
+name = Media: YouTube
+description = Provides YouTube support to the Media module.
+package = "Media"
+core = 7.x
+files[] = media_youtube.module
+files[] = MediaYouTubeStreamWrapper.inc
+files[] = media_youtube.admin.inc
+files[] = includes/media_youtube.styles.inc
+dependencies[] = media_internet

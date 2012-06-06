@@ -1,0 +1,322 @@
+<?php
+
+/**
+ * @file
+ * A module to provide simple Twitter blocks using the Twitter Search API.
+ */
+
+/**
+ * Implements hook_menu().
+ *
+ * Provides a page for configuring new blocks.
+ */
+function twitter_block_menu() {
+  $items['admin/config/services/twitter_block'] = array(
+    'title' => 'Configure Twitter Block(s)',
+    'description' => 'Create and configure Twitter search blocks.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('twitter_block_admin_form'),
+    'access arguments' => array('administer twitter blocks'),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission()
+ */
+function twitter_block_permission() {
+  return array(
+    'administer twitter blocks' => array(
+      'title' => t('Administer Twitter Blocks')),
+  );
+}
+
+/**
+ * Retrieve the twitter block configuration options from the db.
+ */
+function get_twitter_block_config($delta) {
+  static $config;
+  if (!isset($config[$delta])) {
+    $result = db_query("SELECT search_type, search_string, default_title, results_per_page, lang".
+                        " FROM {twitter_block} WHERE delta = :delta", 
+                        array(':delta' => $delta));
+
+    // @todo There can be only one?
+    foreach ($result as $record) {
+      $config[$delta] = get_object_vars($record);
+    }
+
+    // Map searchHashtag option back into appropriate radio
+    if ($config[$delta]['search_type'] === 'searchHashtag') {
+      $config[$delta]['public_timeline'] = 'TRUE';
+    }
+  }
+  return isset($config[$delta]) ? $config[$delta] : FALSE;
+}
+
+/**
+ * The configuration form for twitter blocks.
+ *
+ * @todo Finish this form so we can add and configure multiple blocks.
+ */
+function twitter_block_admin_form() {
+  $form = array();
+  $result = db_query("SELECT delta FROM {twitter_block}");
+
+  $form['Submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save Blocks'),
+  );
+  return $form;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function twitter_block_block_info() {
+  $blocks = array();
+
+  $result = db_query("SELECT delta, default_title FROM {twitter_block}");
+  foreach ($result as $record) {
+    $blocks[$record->delta] = array(
+      'info' => t($record->default_title),
+      'cache' => DRUPAL_CACHE_GLOBAL,
+    );
+  }
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_configure().
+ */
+function twitter_block_block_configure($delta) {
+  $config = get_twitter_block_config($delta);
+  $form = array();
+
+  $form['twitter_block_' . $delta] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Twitter Block Configuration'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#element_validate' => array('twitter_block_form_validate'),
+  );
+
+/**
+ * @todo Provide dynamic form goodness. Right now it is persistently broken.
+ * There's a javascript error on the page that is very likely related. 
+  $form['twitter_block_' . $delta]['public_timeline'] = array(
+    '#type' => 'radios',
+    '#options' => array('TRUE' => t('Public Timeline'), 'FALSE' => t('By User')),
+    '#title' => t('Do you prefer to search the public timeline or return tweets by user?'),
+    '#default_value' => 'FALSE',//$config['public_timeline'],
+  );
+ //*/
+
+  $form['twitter_block_' . $delta]['search_string'] = array(
+    '#type' => 'textfield',
+    '#title' => 'The string or username to search.',
+    '#size' => 32,
+    '#default_value' => $config['search_string'],
+  );
+
+  $form['twitter_block_' . $delta]['search_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Choose the type of Tweets to return.'),
+    '#options' => array(
+      'searchHashtag' => t('Tweets mentioning #hashtag or search string.'),
+      'getTweetsFrom' => t('Tweets sent from the Twitter user.'),
+      'getReplies' => t('Replies to the Twitter user.'),
+      'getMentions' => t('Tweets mentioning the Twitter user.'),
+    ),
+    '#default_value' => $config['search_type'],
+    /**
+     * More broken dynamic form bits...
+    // only provide options for Search by User.
+    '#states' => array ( 'invisible' => array(
+      ':input[name="public_timeline"]' => array('FALSE')),
+     ),
+ */
+  );
+  $form['twitter_block_' . $delta]['lang'] = array(
+    '#type'  => 'textfield',
+    '#title' => 'Language',
+    '#help'  => t('If you would like to limit the search by a language, '.
+            'you can set it here. This should be the specific string expected by '.
+            'twitter for your language. See the twitter advanced search page for '.
+            'more information. (Hint: English is "en"). Leave blank if you don\'t '.
+            'want to filter by language at all.'),
+    '#size'  => 12,
+    '#default_value' => $config['lang'],
+  );
+  $form['twitter_block_' . $delta]['results_per_page'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Number of tweets to return',
+    '#help' => t('Please enter the number of tweets to return per page up to a maximum of 100.'),
+    '#size' => 12,
+    '#default_value' => $config['results_per_page'],
+  );
+
+  return $form; 
+}
+
+/**
+ * Validates twitter block configuration options before saving the form.
+ */
+function twitter_block_form_validate($element, &$form_state) {
+  // Strip off the leading @. 
+  if ( $element['search_type']['#value'] !== 'searchHashtag' 
+        && strpos( $element['search_string']['#value'], '@' ) !== 0) {
+          //form_set_error( 'search_string', t('Twitter names should start with "@".') );
+          $element['search_string']['#value'] = substr($element['search_string']['#value'], 1);
+  }
+  
+  if ( !empty($element['results_per_page']['#value']) ) {
+    if ( !ctype_digit( $element['results_per_page']['#value']) ) { 
+      form_set_error( 'results_per_page', t('The number of results must be an integer.'));
+    }
+    // Twitter doesn't like to return more than 100 tweets.
+    elseif ($element['results_per_page']['#value'] > 100) {
+    form_set_error( 'results_per_page', t("The Twitter API limits the number of tweets returned to 100 or less."));
+    }
+  }
+}
+
+/**
+ * Implements hook_block_save().
+ */
+function twitter_block_block_save($delta = '', $edit = array()) {
+  /*
+   * More broken dynamic form bits.
+
+  // Map public_timeline checkbox to search_type expected by TwitterSearch
+  if ($edit['public_timeline'] === 'TRUE' ) {
+  $edit['search_type'] = 'searchHashtag';
+  } //*/
+
+  db_update('twitter_block')
+    ->fields(array(
+      'search_type' => $edit['search_type'],
+      'search_string' => $edit['search_string'],
+      'results_per_page' => $edit['results_per_page'],
+      'lang' => $edit['lang'],
+      ))
+    ->condition('delta', $delta)
+    ->execute();
+  return;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function twitter_block_block_view($delta) {  
+  module_load_include( 'php', 'twitter_block', 'twitter.class' );
+
+ 
+  $block = array();
+  $config = get_twitter_block_config($delta);
+
+  $twitter = new TwitterSearch($config);
+  $twitter_reply = cache_get($cid = 'twitter_block_'.$delta, $bin = 'cache');
+
+    $block['subject'] = t($config['default_title']);
+
+  if($twitter_reply == null){
+      $twitter_reply = json_decode($twitter->getJSON());
+      if (!isset( $twitter_reply -> results) ) {
+    watchdog('Twitter Block', 'Recieved an unexpected reply from Twitter. ' .
+        'Perhaps just a fail whale? Our search url with query:<br/>' .
+        '@url_query', array( 'url_query' => $twitter -> url_query),
+        WATCHDOG_NOTICE);
+  }
+      else{
+      cache_set('twitter_block_'.$delta,$twitter_reply,'cache',CACHE_TEMPORARY);
+      $block['content'] = theme('twitter_block', $twitter_reply -> results );
+      }
+  }
+  else{
+      $block['content'] = theme('twitter_block', $twitter_reply -> data ->results );
+  }
+
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function twitter_block_theme($existing, $type , $theme, $path) {
+  return array(
+    'twitter_block' => array('variables' => array()),
+    'twitter_block_tweets' =>array('variables' => array()),
+  );  
+}
+
+/**
+ * Implements hook_init().
+ */
+function twitter_block_init() {
+  drupal_add_css( drupal_get_path('module', 'twitter_block') . '/twitter_block.css');
+}
+
+/**
+ * Returns themed html for individual tweets
+ */
+function theme_twitter_block_tweets($tweet_object, $variables = array() ) {
+  $tweet = get_object_vars($tweet_object['tweet']);
+  $tweet['text'] = twitter_block_linkify($tweet['text']);
+  $html = <<<EOHTML
+<div class="twitter_block tweet">
+  <div class="twitter_block_user">
+  <img src="{$tweet['profile_image_url']}" alt="Twitter Avitar"/>
+    <a class="twitter_block profile_image" href="http://twitter.com/{$tweet['from_user']}">
+        <span class="twitter_block_user_name">@{$tweet['from_user']}</span>
+      </a>
+    </div>
+  <div class="tweet_text"><p class="tweet">{$tweet['text']}</p></div> 
+</div>
+EOHTML;
+  
+  return $html;
+}
+
+/**
+ * Returns themed html for a twitter block
+ */
+function theme_twitter_block($twitter_result, $variables = array() ) {
+  foreach($twitter_result as $tweet) {
+    $tweets[] = theme('twitter_block_tweets', array('tweet' => $tweet)); 
+  }
+
+  // Don't show an empty block
+  if (count($twitter_result) > 0) {
+    $html = '<div id="twitter_block_results" class="twitter_block">';
+    $html .= theme('item_list', array('items' => $tweets));
+    $html .= '</div>';
+    return $html;
+  }
+}
+
+function twitter_block_linkify($status_text)
+{
+  // linkify URLs
+  $status_text = preg_replace(
+    '/(https?:\/\/\S+)/',
+    '<a href="\1">\1</a>',
+    $status_text
+  );
+
+  // linkify twitter users
+  $status_text = preg_replace(
+    '/(^|\s)@(\w+)/',
+    '\1@<a href="http://twitter.com/\2">\2</a>',
+    $status_text
+  );
+
+  // linkify tags
+  $status_text = preg_replace(
+    '/(^|\s)#([\wåäöÅÄÖ]+)/',
+    '\1#<a href="http://search.twitter.com/search?q=%23\2">\2</a>',
+    $status_text
+  );
+
+  return $status_text;
+}

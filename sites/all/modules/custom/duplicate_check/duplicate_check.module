@@ -1,0 +1,44 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function duplicate_check_menu() {
+
+  $items = array();
+
+  $items['duplicate_check/search/%'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'duplicate_check_search_json',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+  );
+
+  return $items;
+
+} // duplicate_check_menu
+
+/**
+ * Implements hook_form_alter().
+ */
+function duplicate_check_form_alter(&$form, &$form_state, $form_id) {
+
+  if ($form_id == 'problem_node_form' && (!isset($form['#node']->nid) || $form['#node']->nid == 0)) {
+  
+    $form['#attached']['library'][] = array('system', 'ui.dialog');
+    $form['#attached']['js'][] = drupal_get_path('module', 'duplicate_check') . '/js/duplicate_check.js';
+
+  } // if
+
+} // duplicate_check_form_alter
+
+/**
+ * Returns JSON-formatted search results.
+ */
+function duplicate_check_search_json($search) {
+
+  $results = search_data('type:problem ' . $search, 'node');
+    
+  drupal_json_output($results['#results']);
+
+} // duplicate_check_search_json

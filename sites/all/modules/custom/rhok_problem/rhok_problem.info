@@ -1,0 +1,5 @@
+name = RHoK Problem
+description = Customizations around problems
+core = 7.x
+
+files[] = rhok_problem.module

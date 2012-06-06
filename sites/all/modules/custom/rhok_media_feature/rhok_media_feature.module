@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RHoK Media Feature feature.
+ */
+
+include_once('rhok_media_feature.features.inc');

@@ -1,0 +1,8 @@
+; $Id$
+name = "Feeds module tests"
+description = "Support module for Feeds related testing."
+package = Testing
+version = VERSION
+core = 7.x
+files[] = feeds_test.module
+hidden = TRUE

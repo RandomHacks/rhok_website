@@ -1,0 +1,7 @@
+name = Feeds: Flickr
+description = Adds a Flickr feed processor to the Feeds module.
+package = Feeds
+dependencies[] = feeds
+core = 7.x
+php = 5.2
+files[] = FeedsFlickrParser.inc

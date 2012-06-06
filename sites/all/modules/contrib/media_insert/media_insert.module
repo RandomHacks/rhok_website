@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * Implements hook_form_alter()
+ */
+function media_insert_form_alter(&$form, &$form_state, $form_id) {
+
+  if (media_insert_contains_media_field($form)) {
+
+    $form['#attached']['js'][] = drupal_get_path('module', 'media_insert') . '/js/media_insert.js';
+    $styles = array_keys(image_styles());
+    drupal_add_js(array('media_insert_image_styles' => $styles), 'setting');
+
+  } // if
+
+} // media_insert_form_alter
+
+function media_insert_contains_media_field($element) {
+
+  $children = element_children($element);
+  
+  foreach ($children as $child) {
+
+    if (isset($element[$child]['#type']) && $element[$child]['#type'] == 'media') return TRUE;
+    if (media_insert_contains_media_field($element[$child])) {
+      return TRUE;
+    } // if
+
+  } // foreach
+
+  return FALSE;
+
+} // media_insert_contains_media_field

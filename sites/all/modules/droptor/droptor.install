@@ -1,0 +1,55 @@
+<?php
+/**
+ * @file droptor.install
+ * Contains install and update functions for Droptor.
+ */
+
+
+/**
+ * Implements hook_schema().
+ */
+function droptor_schema() {
+  $schema['droptor_memory'] = array(
+    'description' => 'The table we use to track memory usage.',
+    'fields' => array(
+      'id' => array(
+        'type'     => 'serial',
+        'not null' => TRUE,
+      ),
+      'q' => array(
+        'type'     => 'varchar',
+        'length'   => 250,
+        'not null' => TRUE,
+      ),
+      'dt' => array(
+        'type'     => 'int',
+        'not null' => TRUE,
+      ),
+      'memory' => array(
+        'type'     => 'int',
+        'not null' => TRUE,
+      ),
+      'execution_time' => array(
+        'type'     => 'int',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function droptor_uninstall() {
+  // The {droptor_memory} table is uninstalled automatically in Drupal >=7.
+
+  // Remove variables we use.
+  variable_del('droptor_memory_monitoring');
+  variable_del('droptor_debug_mode');
+  variable_del('droptor_ssl_feed');
+  variable_del('droptor_domain');
+  variable_del('droptor_hash');
+}

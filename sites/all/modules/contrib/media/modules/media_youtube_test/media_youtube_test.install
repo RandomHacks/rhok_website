@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * Implements hook_enable().
+ */
+function media_youtube_test_enable() {
+  // Setup default configuration for displaying YouTube media. Use relatively
+  // high weights so that existing video display settings configured by the
+  // administrator take precedence.
+  $file_displays = variable_get('file_displays', array());
+
+  // Within these view modes, attempt to display a video, but where video
+  // doesn't work (e.g., inside a WYSIWYG editor), fall back to a YouTube
+  // generated image.
+  foreach (array('default', 'media_large', 'media_original') as $view_mode) {
+    $file_displays['video'][$view_mode]['media_youtube_test_video'] = array(
+      'status' => TRUE,
+      'weight' => 10,
+    );
+    $file_displays['video'][$view_mode]['media_youtube_test_image'] = array(
+      'status' => TRUE,
+      'weight' => 11,
+      'settings' => array('image_style' => ''),
+    );
+  }
+
+  // Within a Media preview, display a square thumbnail image.
+  $file_displays['video']['media_preview']['media_youtube_test_image'] = array(
+    'status' => TRUE,
+    'weight' => 10,
+    'settings' => array('image_style' => 'square_thumbnail'),
+  );
+
+  variable_set('file_displays', $file_displays);
+}

@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RHoK Event Feature feature.
+ */
+
+include_once('rhok_event_feature.features.inc');

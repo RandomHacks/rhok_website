@@ -1,0 +1,7 @@
+name = Media Insert
+description = Adds button to media fields to add media to body field.
+package = Media
+core = 7.x
+dependencies[] = media
+
+files[] = media_insert.module

@@ -1,0 +1,13 @@
+name = "Extras"
+description = "Contains additional features: Field Templates, switching view modes on a per node basis, Panel view modes, switch view mode field, hide page title, exposing regions as blocks, fivestar and views displays."
+core = "7.x"
+package = "Display suite"
+dependencies[] = ds
+configure = admin/structure/ds/extras
+
+; Information added by drupal.org packaging script on 2011-08-03
+version = "7.x-1.3"
+core = "7.x"
+project = "ds"
+datestamp = "1312398716"
+

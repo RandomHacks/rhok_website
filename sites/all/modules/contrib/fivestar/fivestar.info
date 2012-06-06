@@ -1,0 +1,6 @@
+name = Fivestar
+description = A simple five-star voting widget for nodes.
+package = Voting
+core = 7.x
+dependencies[] = votingapi
+configure = admin/config/content/fivestar

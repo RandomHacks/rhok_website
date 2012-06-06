@@ -1,0 +1,59 @@
+<?php
+/**
+ * Implementation of hook_install() 
+ */
+function semantic_fields_install() {
+
+}
+
+/**
+ * Implementation of hook_uninstall() 
+ */
+function semantic_fields_uninstall() {
+
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function semantic_fields_schema() {
+  $schema = array();
+
+  $schema['semantic_fields_preset'] = array(
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'human_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'description' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'big',
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'name' => array('name'),
+    ),
+  );
+
+  return $schema;
+}

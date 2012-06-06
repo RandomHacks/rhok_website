@@ -1,0 +1,56 @@
+<?php
+
+/**
+ * @file
+ *
+ * Extends the {file_managed} table with a 'type' column.
+ */
+
+/**
+ * Implement hook_schema_alter().
+ */
+function file_entity_schema_alter(&$schema) {
+  $schema['file_managed']['fields']['type'] = array(
+    'description' => 'The type of this file.',
+    'type' => 'varchar',
+    'length' => 50,
+    'not null' => TRUE,
+    'default' => '',
+  );
+  $schema['file_managed']['indexes']['file_type'] = array('type');
+}
+
+/**
+ * Implements hook_install().
+ */
+function file_entity_install() {
+  $schema = array();
+  file_entity_schema_alter($schema);
+  $spec = $schema['file_managed']['fields']['type'];
+  $indexes_new = array('indexes' => $schema['file_managed']['indexes']);
+
+  // If another module (e.g., Media) had added a {file_managed}.type field,
+  // then change it to the expected specification. Otherwise, add the field.
+  if (db_field_exists('file_managed', 'type')) {
+    // db_change_field() will fail if any records have type=NULL, so update
+    // them to the new default value.
+    db_update('file_managed')->fields(array('type' => $spec['default']))->isNull('type')->execute();
+
+    // Indexes using a field being changed must be dropped prior to calling
+    // db_change_field(). However, the database API doesn't provide a way to do
+    // this without knowing what the old indexes are. Therefore, it is the
+    // responsibility of the module that added them to drop them prior to
+    // allowing this module to be installed.
+    db_change_field('file_managed', 'type', 'type', $spec, $indexes_new);
+  }
+  else {
+    db_add_field('file_managed', 'type', $spec, $indexes_new);
+  }
+}
+
+/**
+ * Implement hook_uninstall().
+ */
+function file_entity_uninstall() {
+  db_drop_field('file_managed', 'type');
+}

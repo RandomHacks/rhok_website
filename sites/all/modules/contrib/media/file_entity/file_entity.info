@@ -1,0 +1,5 @@
+name = "File Entity"
+description = "Extends Drupal file entities to be fieldable and viewable."
+package = Media
+core = 7.x
+dependencies[] = field

@@ -1,0 +1,7 @@
+name = Twitter Block module
+description = "Provides configurable blocks for a Twitter feed."
+core = 7.x
+
+files[] = twitter.class.inc
+files[] = twitter_block.test
+files[] = twitter_block.css

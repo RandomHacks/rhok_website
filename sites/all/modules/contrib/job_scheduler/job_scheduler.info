@@ -1,0 +1,9 @@
+;$Id$
+name = Job Scheduler
+description = Scheduler API
+files[] = job_scheduler.module
+files[] = job_scheduler.install
+files[] = JobScheduler.inc
+files[] = JobSchedulerCronTab.inc
+core = 7.x
+php = 5.2

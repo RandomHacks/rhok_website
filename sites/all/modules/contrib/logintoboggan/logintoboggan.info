@@ -1,0 +1,8 @@
+
+name = "LoginToboggan"
+description = "Improves Drupal's login system."
+core = "7.x"
+configure = admin/config/system/logintoboggan
+
+stylesheets[all][] = logintoboggan.css
+
