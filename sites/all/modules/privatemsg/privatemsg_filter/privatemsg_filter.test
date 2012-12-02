@@ -8,7 +8,7 @@
 /**
  * Test filters, tags and inbox/sent handling.
  */
-class PrivatemsgFilterTestCase extends DrupalWebTestCase {
+class PrivatemsgFilterTestCase extends PrivatemsgBaseTestCase {
   /**
    * Implements getInfo().
    */
@@ -121,7 +121,7 @@ class PrivatemsgFilterTestCase extends DrupalWebTestCase {
 /**
  * Test filters, tags and inbox/sent handling.
  */
-class PrivatemsgTagsTestCase extends DrupalWebTestCase {
+class PrivatemsgTagsTestCase extends PrivatemsgBaseTestCase {
   /**
    * Implements getInfo().
    */
@@ -434,7 +434,7 @@ class PrivatemsgTagsTestCase extends DrupalWebTestCase {
 /**
  * Test filters, tags and inbox/sent handling.
  */
-class PrivatemsgFilterWidgetTestCase extends DrupalWebTestCase {
+class PrivatemsgFilterWidgetTestCase extends PrivatemsgBaseTestCase {
   /**
    * Implements getInfo().
    */

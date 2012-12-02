@@ -1,16 +1,3 @@
-LICENSE
--------
-The Random Hacks of Kindness (RHoK) website code is licensed 
-under the GNU General Public License, version 2 or later 
-(http://www.gnu.org/licenses/old-licenses/gpl-2.0.html), the 
-same as Drupal (http://drupal.org/licensing/faq/). That means 
-you are free to download, reuse, modify, and distribute code 
-hosted in this repository under the terms of either the GPL 
-version 2 or version 3 (the same as Drupal). The license 
-does not cover use of the Random Hacks of Kindness name, logo, 
-or theme (/sites/all/themes/rhok/*), which may only be used 
-with explicit permission from Random Hacks of Kindness.
-
 
 CONTENTS OF THIS FILE
 ---------------------

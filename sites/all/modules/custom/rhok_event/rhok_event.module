@@ -76,15 +76,34 @@ function rhok_event_form_alter(&$form, &$form_state, $form_id) {
   } // if
   else if ($form_id == 'blog_post_node_form') {
 
-    $related = intval($_GET['related']);
+//die(intval($_GET['related']));
+//die($_GET['related'][0]);
+//die(print_r($_GET['related']));
+//require();
+//die(krumo($_GET['related']));
+
+/* The $_GET['related'] variable isn't behaving right. It was causing the site to redirect regular users to the home page when trying to add a blog post. Not sure this functionality is even in use. 
+I see no link to add a blog post from the solution or problem pages and the point of this var seems to be to add a blog for a related solution or problem.
+*/
+/*
+    if(isset($_GET['related'])){
+	$related = intval($_GET['related']);
+	die('it is set');
+    }//if
+    else{
+	$related = 0;
+    }
   
     if ($related > 0) {
       $form['field_blog_related']['und'][0]['nid']['#default_value'] = $related;
       $form['field_blog_related']['und'][0]['nid']['#disabled'] = TRUE;
     } // if
     else if (!user_access('edit any blog_post content')) {
+
       drupal_goto();
+
     } // else if
+*/
 
   } // else if
 

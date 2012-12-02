@@ -1,0 +1,708 @@
+<?php
+
+/**
+ * @file
+ *  Displays content as rotating content using jQuery Scrollable plugin.
+ *  It can be used either as a Block or in Views
+ */
+
+/**
+ * Implements hook_help().
+ */
+function scrollable_content_help($section) {
+  switch ($section) {
+    case 'admin/modules#description':
+      return 'Scrollable Content Module: Display content and image in slide show (rotating) mode using jQuery.';
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function scrollable_content_theme($existing, $type, $theme, $path) {
+  return array(
+    'scrollable_content' => array(
+      'variables' => array('slides' => NULL),
+      'template' => 'scrollable-content',
+    ),
+  );
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function scrollable_content_block_info() {
+  $blocks['scrollable_content'] = array(
+    'info' => t('Scrollable Content'), 
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_configure().
+ */
+function scrollable_content_block_configure($delta = '') {
+  return scrollable_content_form('var', $delta);
+}
+
+/**
+ * Implements hook_block_save().
+ */
+function scrollable_content_block_save($delta = '', $edit = array()) {
+  $elements = scrollable_content_elements_init();
+
+  foreach ($elements as $element => $value) {
+    if (!empty($edit[$element])) {
+      variable_set($element, $edit[$element]);
+    }
+  }
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function scrollable_content_block_view($delta = '') {
+  $block = array();
+  scrollable_content_include('all');
+
+  $content = scrollable_content_get_slides();
+
+  if ($content) {
+    $block['subject'] = t('Scrollable Content');
+    $block['content'] = theme('scrollable_content', array('slides' => $content));
+  }
+  else {
+    $block['subject'] = '';
+    $block['content'] = '';
+  }
+
+  return $block;
+}
+
+/**
+ * Prepare Scrollable Content default values
+ */
+function scrollable_content_elements_init($element = NULL) {
+  $defaults = array();
+
+  $defaults['entities_bundles_types'] = '';
+  $defaults['image_field'] = '';
+
+  $defaults['max'] = 5;
+  $defaults['default_image'] = '';
+  $defaults['image_style'] = '';
+
+  $defaults['autoscroll'] = 1;
+  $defaults['direction'] = 'horizontal';
+  $defaults['interval'] = 4000;
+  $defaults['speed'] = 400;
+
+  $defaults['keyboard'] = 1;
+  $defaults['mousewheel'] = 1;
+
+  $defaults['circular'] = 1;
+  $defaults['navigator'] = 1;
+  $defaults['history'] = 1;
+
+  $defaults['theme_name'] = 'blue';
+
+  return isset($element) ? $defaults[$element] : $defaults;
+}
+
+/**
+ * Get variable's default value
+ *
+ * @param $type
+ *   Either var or view, if 'var' we use variable_get, if 'view' we get the value from views' options
+ *
+ * @param $name
+ *   The name of the field
+ *
+ * @param $value
+ *   The default value, if we pass it we get extra performance, we don't call scrollable_content_elements_init()
+ *   passed
+ * @param $view
+ *   If type is 'view', then we also pass the view object
+ *
+ * @return mixed
+ *   The default value of the field parameter
+ *
+ */
+function scrollable_content_element_default($type = 'var', $name, $value = NULL, $view = NULL) {
+  switch ($type) {
+    case 'var':
+      if (!isset($value)) {
+        $value = scrollable_content_elements_init($name);
+      }
+      return variable_get($name, $value);
+
+    case 'view':
+      return isset($view->options[$name])? $view->options[$name] : variable_get($name, $value);
+  }
+}
+
+/**
+ * Builds and returns the Scrollable Content settings form.
+ *
+ * @param $type
+ *   The type of the form, either 'var' or 'view'
+ *   It's important so we can get the right default value of the form's fields
+ *
+ * @param $handler
+ *   The view's object in case this form is views form
+ *
+ * @return mixed
+ *   The form array with it's fields
+ *
+ */
+function scrollable_content_form($type = 'var', $handler = NULL) {
+  $defaults = scrollable_content_elements_init();
+
+  // Scrollable source settings
+  $form['scrollable_content_source'] = array(
+    '#type' => 'fieldset',
+    '#weight' => 20,
+    '#title' => t('Scrollable Content Source'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+    // Entities & bundles
+    $types = array();
+    $entities = entity_get_info();
+    foreach (field_info_bundles() as $entity_type => $bundles) {
+      if ($entities[$entity_type]['fieldable']) {
+        $types[$entity_type] = $entities[$entity_type]['label'];
+        #$types[$entity_type][] = t($entities[$entity_type]['label']);
+        #foreach ($bundles as $bundle_name => $info) {
+          #$types[$bundle_name] = '--' . $info['label'];
+        #}
+      }
+    }
+    if (!empty($types)) {
+      $element = 'entities_bundles_types';
+      $form['scrollable_content_source'][$element] = array(
+        '#type' => 'select',
+        '#title' => t('Only from type(s)'),
+        '#options' => $types,
+        '#multiple' => TRUE,
+        '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+        '#description' => t('The content type(s) that you want to display as sliding content.'),
+      );
+    }
+
+    // Image fields
+    $image_fields = array();
+    foreach (field_info_fields() as $field_name => $field) {
+      if ($field['type'] == 'image') {
+        $image_fields[$field_name] = $field_name;
+      }
+    }
+    if (!empty($image_fields)) {
+      $element = 'image_field';
+      $form['scrollable_content_source'][$element] = array(
+        '#type' => 'select',
+        '#title' => t('Images field name'),
+        '#options' => $image_fields,
+        '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+        '#description' => t('The name of CCK field that contains images. <em>Select - Auto Detect - if you don\'t know what is this or if you put the images inside body field directlry (e.g. img tag)</em>. Scrollable Content can detect and get images if they are inside node\'s body. <br/><strong>Note:</strong> Selecting - Auto Detect - will decrease the performance of this module slightly.'),
+      );
+    }
+
+  // Results settings
+  $form['scrollable_content_results'] = array(
+    '#type' => 'fieldset',
+    '#weight' => 30,
+    '#title' => t('Results settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+    $element = 'max';
+    $form['scrollable_content_results'][$element] = array(
+      '#type' => 'textfield',
+      '#title' => t('Maximum number of results (nodes)'),
+      '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+      '#description' => t('Maximum number of resulted nodes to display.'),
+      '#maxlength' => '6',
+      '#size' => '6',
+      '#element_validate' => array('scrollable_content_integer_validate'),
+    );
+
+    $element = 'default_image';
+    $form['scrollable_content_results'][$element] = array(
+      '#type' => 'textfield',
+      '#title' => t('Default image'),
+      '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+      '#description' => t('If Scrollable Content does not find any image in the node, it will use this default image.'),
+      '#maxlength' => 255,
+      '#field_prefix' => '<strong>' . url('<front>', array('absolute' => TRUE)) . '</strong>',
+    );
+
+    // Image styles
+    if (module_exists('image')) {
+      $styles = array();
+      foreach (image_styles() as $style) {
+        $styles[$style['name']] = $style['name'];
+      }
+      if (!empty($styles)) {
+        $element = 'image_style';
+        $form['scrollable_content_results'][$element] = array(
+          '#type' => 'select',
+          '#title' => t('Imagecache Preset'),
+          '#options' => $styles,
+          '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+          '#description' => t('The Imagecache preset to use for scalling the images in Scrollable.'),
+        );
+      }
+    }
+
+  // Render settings
+  $form['scrollable_content_settings'] = array(
+    '#type' => 'fieldset',
+    '#weight' => 40,
+    '#title' => t('Render settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+    $element = 'autoscroll';
+    $form['scrollable_content_settings'][$element] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Automatic scrolling'),
+      '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+      '#description' => t('Automatic scrolling content.'),
+      '#maxlength' => '1',
+      '#size' => '1',
+    );
+
+    $element = 'direction';
+    $directions = array('horizontal' => 'horizontal', 'vertical' => 'vertical');
+    $form['scrollable_content_settings'][$element] = array(
+      '#type' => 'select',
+      '#title' => t('Sliding direction'),
+      '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+      '#options' => $directions,
+    );
+
+    $element = 'interval';
+    $form['scrollable_content_settings'][$element] = array(
+      '#type' => 'textfield',
+      '#title' => t('Interval Speed'),
+      '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+      '#description' => t('The time (in milliseconds) between autoscrolls.'),
+      '#maxlength' => '6',
+      '#size' => '6',
+      '#element_validate' => array('scrollable_content_integer_validate'),
+    );
+
+    $element = 'speed';
+    $form['scrollable_content_settings'][$element] = array(
+      '#type' => 'textfield',
+      '#title' => t('Sliding Speed'),
+      '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+      '#description' => t('The scrolling speed (in milliseconds) on each step.'),
+      '#maxlength' => '6',
+      '#size' => '6',
+      '#element_validate' => array('scrollable_content_integer_validate'),
+    );
+
+    $element = 'keyboard';
+    $form['scrollable_content_settings'][$element] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Keyboard support'),
+      '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+      '#description' => t('Whether or not keyboard arrow key navigation is enabled. The horizontal scroller 
+      moves backwards/forwards with the left/right arrow keys; the vertical scroller moves with the up/down keys.'),
+      '#maxlength' => '1',
+      '#size' => '1',
+    );
+
+    $element = 'mousewheel';
+    $form['scrollable_content_settings'][$element] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Mousewheel scrolling'),
+      '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+      '#description' => t('Move slides using mousewheel.'),
+      '#maxlength' => '1',
+      '#size' => '1',
+    );
+
+    $element = 'circular';
+    $form['scrollable_content_settings'][$element] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Circular'),
+      '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+      '#description' => t('If checked Scrollable Content will begin again after reaching the final slide.'),
+      '#maxlength' => '1',
+      '#size' => '1',
+    );
+
+    $element = 'navigator';
+    $form['scrollable_content_settings'][$element] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Navigation links'),
+      '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+      '#description' => t('Provides navigational links for resulted slides to easily move to any slide.'),
+      '#maxlength' => '1',
+      '#size' => '1',
+    );
+
+    $element = 'history';
+    $form['scrollable_content_settings'][$element] = array(
+      '#type' => 'checkbox',
+      '#title' => t('History'),
+      '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+      '#description' => t('History will enable the back button on navigation links to go back to previous slides. 
+      <strong>Note:</strong> History works only with navigation links.'),
+      '#maxlength' => '1',
+      '#size' => '1',
+    );
+
+
+  // Scrollable Content Themes
+  $form['scrollable_content_theme'] = array(
+    '#type' => 'fieldset',
+    '#weight' => 50,
+    '#title' => t('Theme'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+    $element = 'theme_name';
+    $form['scrollable_content_theme'][$element] = array(
+      '#type' => 'select',
+      '#title' => t('Theme name'),
+      '#options' => scrollable_content_get_themes(),
+      '#default_value' => scrollable_content_element_default($type, $element, $defaults[$element], $handler),
+    );
+
+  return $form;
+}
+
+/**
+ * Validate integers
+ *
+ * @param $element
+ *  Type: array; The form element to validate.
+ */
+function scrollable_content_integer_validate($element) {
+  if (preg_match('/\D/', $element['#value']) == 1) {
+    form_set_error(
+      $element['#name'], 
+      t('%element_title may only contain numbers.', array('%element_title' => $element['#title']))
+    );
+  }
+}
+
+/**
+ * Get Scrollable Content themes names from 'themes' dir.
+ */
+function scrollable_content_get_themes() {
+  $dirs = scandir(drupal_get_path('module', 'scrollable_content') . '/themes');
+  $themes = array();
+  foreach ($dirs as $key => $val) {
+    if ($val[0] == '.') {
+      unset($dirs[$key]);
+    }
+    else {
+      $themes[$val] = ucwords($val);
+    }
+  }
+  return $themes;
+}
+
+/**
+ * Include CSS and Javascript files
+ * 
+ * @param $files
+ *    Files to include.
+ */
+function scrollable_content_include($files) {
+  switch ($files) {
+    case 'all':
+      scrollable_content_add_files('/css/scrollable_content.css', 'css');
+      scrollable_content_add_files('/js/jquery.tools.min.js', 'js');
+      break;
+  }
+}
+
+/**
+ * Add specific file to Drupal
+ * 
+ * @param $path
+ *    The path of the file.
+ * @param $type
+ *    Wiether it's CSS or JS file.
+ */
+function scrollable_content_add_files($path, $type) {
+  $path = drupal_get_path('module', 'scrollable_content') . $path;
+  switch ($type) {
+    case 'css':
+      drupal_add_css($path);
+      break;
+    case 'js':
+      drupal_add_js($path);
+      break;
+  }
+}
+
+/**
+ * Get entities to display in Scrollable Content block
+ *
+ * @return
+ *   Slides to show in scrolling content mode
+ */
+function scrollable_content_get_slides() {
+  $slides = array();
+  $types = scrollable_content_element_default('var', 'entities_bundles_types');
+  $limit = scrollable_content_element_default('var', 'max');
+  $num_rows = 0;
+
+  if ($types) {
+    foreach ($types as $entity_type) {
+      $info = entity_get_info($entity_type);
+      $id = $info['entity keys']['id'];
+
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', $entity_type);
+      $query->range(0, $limit);
+      $results = $query->execute();
+
+      // Get entities ids in order to load them
+      $entities_ids = array();
+      foreach ($results[$entity_type] as $entity) {
+        $entities_ids[] = $entity->{$info['entity keys']['id']};
+      }
+
+      // Load entities from their keys and types
+      if ($entities_ids) {
+        $entities = entity_load($entity_type, $entities_ids);
+      }
+
+      // Convery entities into slides
+      $slides = array();
+      foreach ($entities as $entity) {
+        $slide = scrollable_content_get_slide_pieces($entity, $entity_type, $id);
+        if ($slide) {
+          $slides[] = $slide;
+        }
+      }
+    }
+  }
+
+  // Magic inside!
+  #scrollable_content_remove_duplicates($slides);
+
+  return ($slides) ? $slides : NULL;
+}
+
+/**
+ * Get each slide's pieces: 
+ *  - id: entity id
+ *  - link: the path to the entity
+ *  - title: entity's title
+ *  - image: image path in that entity
+ *
+ * @todo
+ *   is there an api for entity path?
+ */
+function scrollable_content_get_slide_pieces($entity, $entity_type, $id) {
+  $uri = scrollable_content_get_slide_image($entity);
+
+  if ($uri) {
+    $pieces = array(
+      'id' => $entity->{$id},
+      'path' => url($entity_type . $entity->{$id}),
+      'title' => $entity->title,
+      'image' => file_create_url($uri),
+    );
+
+    return $pieces;
+  }
+  else {
+    return NULL;
+  }
+}
+
+/**
+ * Get and determine image path in an entity
+ */
+function scrollable_content_get_slide_image($entity) {
+  $image_field = scrollable_content_element_default('var', 'image_field');
+  $uri = '';
+
+  $instances = NULL;
+  if (isset($entity->{$image_field})) {
+    $langcode = $entity->language;
+    if (isset($entity->{$image_field}[$langcode])) {
+      $instances = $entity->{$image_field}[$langcode];
+    }
+    elseif (isset($entity->{$image_field}['und'])) {
+      $instances = $entity->{$image_field}['und'];
+    }
+
+    if ($instances) {
+      // we only need one image
+      $instance = array_pop($instances);
+      $uri = $instance['uri'];
+    }
+  }
+
+/*
+  else { // No imagefield, so the image might be inside the body
+    $pattern = '!<img.*?src="(.*?)"!';
+    preg_match($pattern, $node->body, $matches);
+    $image_base_path = substr($matches[1], 0, strlen($base_path));
+
+    if (!empty($matches[1])) {
+      if ($image_base_path == $base_path) {
+        $image_src = strstr($matches[1], 'sites/');
+      }
+      else {
+        $image_src = $matches[1];
+      }
+    }
+  }
+*/
+  // @todo: allow uploading or some flexibility here
+  // if we failed getting any image just return the default one (if any!!)
+  if (empty($uri) && scrollable_content_element_default('var', 'default_image') != '') {
+    #dpm(scrollable_content_element_default('var', 'default_image'));
+    //$image_src = 'sites/default/files/' . scrollable_content_element_default('var', 'default_image');
+
+    //image_style_url
+    //image_style_path
+  }
+
+  return $uri;
+
+  // Apply image style on this image
+/*
+  $preset = scrollable_content_element_default('var', 'image_style');
+  if (module_exists('imagecache') && !empty($preset) && function_exists('imagecache_create_url')) {
+    $imagecached_src = imagecache_create_url($preset, $image_src);
+
+    // Check if there is an imagecache version of our image, otherwise use the original
+    // This case may occure when using images from outside your website
+    if (is_array(@getimagesize($imagecached_src))) {
+      return $imagecached_src;
+    }
+    else {
+      return $image_src;
+    }
+  }
+  else {
+    return $image_src;
+  }
+*/
+}
+
+/**
+ * Remove duplicates content from Scrollable
+ */
+function scrollable_content_remove_duplicates($nodes) {
+  $id_array = array();
+
+  foreach ($nodes as $key => $node) {
+    if (in_array($node['nid'], $id_array)) {
+      unset($nodes[$key]);
+    }
+    $id_array[] = $node['nid'];
+  }
+
+  return $nodes;
+}
+
+/**
+ * Process variables for scrollable-content.tpl.php.
+ *
+ * @see scrollable-content.tpl.php
+ */
+function template_preprocess_scrollable_content(&$variables) {
+  $options = array(
+   'autoscroll' => scrollable_content_element_default('var', 'autoscroll'),
+   'direction' => scrollable_content_element_default('var', 'direction'),
+   'interval' => scrollable_content_element_default('var', 'interval'),
+   'speed' => scrollable_content_element_default('var', 'speed'),
+   'keyboard' => scrollable_content_element_default('var', 'keyboard'),
+   'mousewheel' => scrollable_content_element_default('var', 'mousewheel'),
+   'circular' => scrollable_content_element_default('var', 'circular'),
+   'navigator' => scrollable_content_element_default('var', 'navigator'),
+   'history' => scrollable_content_element_default('var', 'history'),
+   'autoplay' => TRUE,
+   'autopause' => TRUE,
+   'items' => 'items',
+  );
+
+  $variables['direction'] = $options['direction'];
+  $variables['classes'] = scrollable_content_element_default('var', 'theme_name');
+  drupal_add_js(scrollable_content_build_js_code($options), 'inline');
+  scrollable_content_add_files('/themes/' . scrollable_content_element_default('var', 'theme_name') . '/theme.css', 'css');
+}
+
+/**
+ * Themes Scrollable Content view
+ */
+function template_preprocess_scrollable_content_view(&$variables) {
+  scrollable_content_include('all');
+
+  $view = $variables['view'];
+  $options = $view->style_plugin->options;
+
+  $variables['options']['items'] = $view->name;
+  $variables['options']['history'] = FALSE;
+  $variables['options']['autoplay'] = TRUE;
+  $variables['options']['autopause'] = TRUE;
+  $variables['classes'] = $variables['options']['theme_name'];
+
+  drupal_add_js(scrollable_content_build_js_code($variables['options']), 'inline');
+  scrollable_content_add_files('/themes/' . $variables['options']['theme_name'] . '/theme.css', 'css');
+}
+
+/**
+ * Build javascript code for Scrollable Content
+ * 
+ * @param: $options: array of scrollable options
+ */
+function scrollable_content_build_js_code($options) {
+  $js = "jQuery(function() {\n";
+
+    $js .= "jQuery(\"#scrollable_content_" . $options['items'] . "\").scrollable({\n";
+      $js .= "  keyboard: " . $options['keyboard'] . ", \n";
+      $js .= "  mousewheel: " . $options['mousewheel'] . ", \n";
+      $js .= "  circular: " . $options['circular'] . ", \n";
+
+      $js .= "  speed: " . $options['speed'] . ", \n";
+
+      if (!$options['direction']) {
+        $js .= "  vertical: true, \n";
+      }
+    $js .= "})";
+
+    if ($options['navigator']) {
+      $js .= ".navigator({\n";
+        $js .= "  navi: \"#scrollable_content_" . $options['items'] . "_navi\", \n";
+        //$js .= "naviItem: 'a', \n";
+        $js .= "  activeClass: 'scrollable_content_active', \n";
+
+        if ($options['history'] && 0) {
+          $js .= "  history: " . $options['history'] . ", \n";
+        }
+      $js .= "})";
+    }
+
+    if ($options['autoscroll']) {
+      $js .= ".autoscroll({\n";
+        $js .= "  interval: " . $options['interval'] . ", \n";
+        $js .= "  autoplay: " . $options['autoplay'] . ", \n";
+        $js .= "  autopause: " . $options['autopause'] . ", \n";
+      $js .= "})";
+    }
+
+    $js .= ";\n";
+
+  $js .= "});";
+
+  return $js;
+}

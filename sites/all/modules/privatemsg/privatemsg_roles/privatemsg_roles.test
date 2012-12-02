@@ -8,7 +8,7 @@
 /**
  * Test cases for the privatemsg_roles module.
  */
-class PrivatemsgRolesTestCase extends DrupalWebTestCase {
+class PrivatemsgRolesTestCase extends PrivatemsgBaseTestCase {
   public static function getInfo() {
     return array(
       'name' => 'Privatemsg Roles functionality',
@@ -30,7 +30,7 @@ class PrivatemsgRolesTestCase extends DrupalWebTestCase {
     $edit = array('roles' => $user2->roles + $user1->roles);
     user_save($user2, $edit);
 
-    $recipient = user_role_load($user1->roles[5]);
+    $recipient = user_role_load($user1->roles[4]);
     $recipient->recipient = $recipient->rid;
     $recipient->type = 'role';
     privatemsg_new_thread(array($recipient), $subject = $this->randomName(10), $body = $this->randomName(50), array('author' => $admin));
@@ -59,7 +59,7 @@ class PrivatemsgRolesTestCase extends DrupalWebTestCase {
       user_save($users[$i], $edit);
     }
 
-    $recipient = user_role_load($user1->roles[5]);
+    $recipient = user_role_load($user1->roles[4]);
     $recipient->recipient = $recipient->rid;
     $recipient->type = 'role';
     privatemsg_new_thread(array($recipient), $subject = $this->randomName(10), $body = $this->randomName(50), array('author' => $admin));
@@ -113,12 +113,12 @@ class PrivatemsgRolesTestCase extends DrupalWebTestCase {
 
     // Send a message to the role shared by all users.
     $edit = array(
-      'recipient' => user_role_load($user1->roles[5])->name . '[role]',
+      'recipient' => user_role_load($user1->roles[4])->name . '[role]',
       'subject' => $this->randomName(10),
       'body[value]' => $this->randomName(50),
     );
     $this->drupalPost('messages/new', $edit, t('Send message'));
-    $this->assertText(t('A message has been sent to @role (role).', array('@role' => user_role_load($user1->roles[5])->name)));
+    $this->assertText(t('A message has been sent to @role (role).', array('@role' => user_role_load($user1->roles[4])->name)));
 
     // Test a few recipients to see if they all recieved the message.
     foreach ($users as $user) {
@@ -138,7 +138,7 @@ class PrivatemsgRolesTestCase extends DrupalWebTestCase {
 
     // Send a message to the role of user 1 and 2.
     $edit = array(
-      'recipient' => $user2->roles[5] . '[role]',
+      'recipient' => $user2->roles[4] . '[role]',
       'subject' => $this->randomName(10),
       'body[value]' => $this->randomName(50),
     );
@@ -157,13 +157,13 @@ class PrivatemsgRolesTestCase extends DrupalWebTestCase {
     $this->drupalLogin($admin);
 
     // Verify autocomplete feature.
-    $role_name = user_role_load($user1->roles[5])->name;
+    $role_name = user_role_load($user1->roles[4])->name;
     $json = $this->drupalGet('messages/autocomplete/' . drupal_substr($role_name, 0, 2));
     $autocomplete = (array)json_decode($json);
     $this->assertEqual($autocomplete[$role_name . ', '], $role_name);
 
     // Access the form through a url that pre-fills the recipient field.
-    $this->drupalGet('messages/new/role_5');
+    $this->drupalGet('messages/new/role_4');
 
     // Send a message to the role of user 1 and 2.
     $edit = array(
@@ -171,7 +171,7 @@ class PrivatemsgRolesTestCase extends DrupalWebTestCase {
       'body[value]' => $this->randomName(50),
     );
     $this->drupalPost(NULL, $edit, t('Send message'));
-    $this->assertText(t('A message has been sent to @role (role).', array('@role' => user_role_load($user1->roles[5])->name)));
+    $this->assertText(t('A message has been sent to @role (role).', array('@role' => user_role_load($user1->roles[4])->name)));
 
     // Log in as user1 and check that the message is listed, is marked as new
     // and can be marked as read.
@@ -237,12 +237,12 @@ class PrivatemsgRolesTestCase extends DrupalWebTestCase {
 
     // Send a message to the role of user 1 and 2.
     $edit = array(
-      'recipient' => user_role_load($user1->roles[5])->name . '[role]',
+      'recipient' => user_role_load($user1->roles[4])->name . '[role]',
       'subject' => $this->randomName(10),
       'body[value]' => $this->randomName(50),
     );
     $this->drupalPost('messages/new', $edit, t('Send message'));
-    $this->assertText(t('A message has been sent to @role (role).', array('@role' => user_role_load($user1->roles[5])->name)));
+    $this->assertText(t('A message has been sent to @role (role).', array('@role' => user_role_load($user1->roles[4])->name)));
 
     // Log in as user1 and check that the message is listed, is marked as new
     // and can be marked as read.
@@ -254,7 +254,7 @@ class PrivatemsgRolesTestCase extends DrupalWebTestCase {
     $this->assertText($edit['body[value]'], t('Thread starter body displayed.'));
 
     // Make sure that the user doesn't see the role recipient.
-    $this->assertNoText(t('@role (role)', array('@role' => user_role_load($user1->roles[5])->name)));
+    $this->assertNoText(t('@role (role)', array('@role' => user_role_load($user1->roles[4])->name)));
 
     // Log in as user2 and make sure that he didn't received the messages
     // as he blocks admin.
@@ -270,12 +270,12 @@ class PrivatemsgRolesTestCase extends DrupalWebTestCase {
     // Send a message to the role of user 1.
     $this->drupalLogin($admin);
     $edit = array(
-      'recipient' => user_role_load($user1->roles[5])->name . '[role]',
+      'recipient' => user_role_load($user1->roles[4])->name . '[role]',
       'subject' => $this->randomName(10),
       'body[value]' => $this->randomName(50),
     );
     $this->drupalPost('messages/new', $edit, t('Send message'));
-    $this->assertText(t('A message has been sent to @role (role).', array('@role' => user_role_load($user1->roles[5])->name)));
+    $this->assertText(t('A message has been sent to @role (role).', array('@role' => user_role_load($user1->roles[4])->name)));
 
     // Add user 2 with the same role now. The user should not see the message.
     $user2 = $this->drupalCreateUser();

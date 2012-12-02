@@ -17,6 +17,13 @@
  * hook_entity_info(). That way modules are able to override your defaults
  * by altering the hook_entity_info() callbacks, while $entity->label() and
  * $entity->uri() reflect this changes as well.
+ *
+ * Defaults for entity properties can be easily defined by adding class
+ * properties, e.g.:
+ * @code
+ *   public $name = '';
+ *   public $count = 0;
+ * @endcode
  */
 class Entity {
 
@@ -31,14 +38,10 @@ class Entity {
    */
   public function __construct(array $values = array(), $entityType = NULL) {
     if (empty($entityType)) {
-      throw new Exception('Cannot created an instance of Entity without a specified entity type.');
+      throw new Exception('Cannot create an instance of Entity without a specified entity type.');
     }
     $this->entityType = $entityType;
-    $this->entityInfo = entity_get_info($entityType);
-    $this->idKey = $this->entityInfo['entity keys']['id'];
-    $this->nameKey = isset($this->entityInfo['entity keys']['name']) ? $this->entityInfo['entity keys']['name'] : $this->idKey;
-    $this->statusKey = empty($info['entity keys']['status']) ? 'status' : $info['entity keys']['status'];
-
+    $this->setUp();
     // Set initial values.
     foreach ($values as $key => $value) {
       $this->$key = $value;
@@ -46,23 +49,33 @@ class Entity {
   }
 
   /**
+   * Set up the object instance on construction or unserializiation.
+   */
+  protected function setUp() {
+    $this->entityInfo = entity_get_info($this->entityType);
+    $this->idKey = $this->entityInfo['entity keys']['id'];
+    $this->nameKey = isset($this->entityInfo['entity keys']['name']) ? $this->entityInfo['entity keys']['name'] : $this->idKey;
+    $this->statusKey = empty($info['entity keys']['status']) ? 'status' : $info['entity keys']['status'];
+  }
+
+  /**
    * Returns the internal, numeric identifier.
    *
-   * For exportable entities, this differs to the uniform identifier returned
-   * by Entity::identifier(). The internal identifier is supposed to be only
-   * used internally to refer to an entity, i.e. in the database. If unsure, use
-   * Entity:identifier().
+   * Returns the numeric identifier, even if the entity type has specified a
+   * name key. In the latter case, the numeric identifier is supposed to be used
+   * when dealing generically with entities or internally to refer to an entity,
+   * i.e. in a relational database. If unsure, use Entity:identifier().
    */
   public function internalIdentifier() {
     return isset($this->{$this->idKey}) ? $this->{$this->idKey} : NULL;
   }
 
   /**
-   * Returns the unified identifer.
+   * Returns the entity identifier, i.e. the entities name or numeric id.
    *
    * @return
-   *   The identifier of the entity. For exportable entities, this is their
-   *   machine readable name.
+   *   The identifier of the entity. If the entity type makes use of a name key,
+   *   the name is returned, else the numeric id.
    *
    * @see entity_id()
    */
@@ -87,6 +100,17 @@ class Entity {
   }
 
   /**
+   * Returns the bundle of the entity.
+   *
+   * @return
+   *   The bundle of the entity. Defaults to the entity type if the entity type
+   *   does not make use of different bundles.
+   */
+  public function bundle() {
+    return !empty($this->entityInfo['entity keys']['bundle']) ? $this->{$this->entityInfo['entity keys']['bundle']} : $this->entityType;
+  }
+
+  /**
    * Returns the label of the entity.
    *
    * Modules may alter the label by specifying another 'label callback' using
@@ -98,16 +122,19 @@ class Entity {
     if (isset($this->entityInfo['label callback']) && $this->entityInfo['label callback'] == 'entity_class_label') {
       return $this->defaultLabel();
     }
-    return entity_label($entity_type, $entity);
+    return entity_label($this->entityType, $this);
   }
 
   /**
-   * Override this in order to implement a custom default label and specify
-   * 'entity_class_label' as 'label callback' hook_entity_info(). As an
-   * alternative to that the label key may be provided in hook_entity_info().
+   * Defines the entity label if the 'entity_class_label' callback is used.
+   *
+   * Specify 'entity_class_label' as 'label callback' in hook_entity_info() to
+   * let the entity label point to this method. Override this in order to
+   * implement a custom default label.
    */
   protected function defaultLabel() {
-    return 'unlabelled';
+    // Add in the translated specified label property.
+    return $this->getTranslation($this->entityInfo['entity keys']['label']);
   }
 
   /**
@@ -187,8 +214,8 @@ class Entity {
    *
    * @see entity_view()
    */
-  public function view($view_mode = 'full', $langcode = NULL) {
-    return entity_get_controller($this->entityType)->view(array($this->identifier() => $this), $view_mode, $langcode);
+  public function view($view_mode = 'full', $langcode = NULL, $page = NULL) {
+    return entity_get_controller($this->entityType)->view(array($this), $view_mode, $langcode, $page);
   }
 
   /**
@@ -198,6 +225,64 @@ class Entity {
    */
   public function buildContent($view_mode = 'full', $langcode = NULL) {
     return entity_get_controller($this->entityType)->buildContent($this, $view_mode, $langcode);
+  }
+
+  /**
+   * Gets the raw, translated value of a property or field.
+   *
+   * Supports retrieving field translations as well as i18n string translations.
+   *
+   * Note that this returns raw data values, which might not reflect what
+   * has been declared for hook_entity_property_info() as no 'getter callbacks'
+   * are invoked or no referenced entities are loaded. For retrieving values
+   * reflecting the property info make use of entity metadata wrappers, see
+   * entity_metadata_wrapper().
+   *
+   * @param $property_name
+   *   The name of the property to return; e.g., 'title'.
+   * @param $langcode
+   *   (optional) The language code of the language to which the value should
+   *   be translated. If set to NULL, the default display language is being
+   *   used.
+   *
+   * @return
+   *   The raw, translated property value; or the raw, un-translated value if no
+   *   translation is available.
+   *
+   * @todo Implement an analogous setTranslation() method for updating.
+   */
+  public function getTranslation($property, $langcode = NULL) {
+    $all_info = entity_get_all_property_info($this->entityType);
+    $property_info = $all_info[$property];
+
+    if (!empty($property_info['translatable'])) {
+      if (!empty($property_info['field'])) {
+        return field_get_items($this->entityType, $this, $property, $langcode);
+      }
+      elseif (!empty($property_info['i18n string'])) {
+        $name = $this->entityInfo['module'] . ':' . $this->entityType . ':' . $this->identifier() . ':' . $property;
+        return entity_i18n_string($name, $this->$property, $langcode);
+      }
+    }
+    return $this->$property;
+  }
+
+  /**
+   * Magic method to only serialize what's necessary.
+   */
+  public function __sleep() {
+    $vars = get_object_vars($this);
+    unset($vars['entityInfo'], $vars['idKey'], $vars['nameKey'], $vars['statusKey']);
+    // Also key the returned array with the variable names so the method may
+    // be easily overridden and customized.
+    return drupal_map_assoc(array_keys($vars));
+  }
+
+  /**
+   * Magic method to invoke setUp() on unserialization.
+   */
+  public function __wakeup() {
+    $this->setUp();
   }
 }
 

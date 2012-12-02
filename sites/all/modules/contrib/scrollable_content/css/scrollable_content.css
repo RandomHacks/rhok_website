@@ -1,0 +1,129 @@
+.scrollable_content {
+  direction: ltr;
+  float: left;
+  height: 450px;
+  overflow: hidden;
+  position: relative;
+  width: 650px;
+}
+.scrollable_content .items {
+  clear: both;
+  position: absolute;
+  width: 20000em;
+}
+
+/* single item */
+.scrollable_content .items .slide {
+  cursor: pointer;
+  float: left;
+  height: 450px;
+  position: relative;
+  text-align: center;
+  width: 650px;
+}
+div.horizontal .items div {
+  float: left;
+}
+
+.scrollable_content .items a {
+  display: block;
+}
+.scrollable_content .items img {
+  height: 450px;
+  width: 650px;
+}
+.scrollable_content .items h3, .scrollable_content .items div.views-field-title {
+  font-size: 120%;
+  left: 0;
+  bottom: 0;
+  padding: 10px 30px;
+  position:  absolute;
+  width: 400px;
+  opacity: 0.9;
+  filter: alpha(opacity = 90);
+  z-index: 10px;
+}
+
+
+/* custom positioning for navigational links */
+a.scrollable_content_prev, a.scrollable_content_next {
+  margin-top: 118px;	
+  cursor: pointer;
+  display: block;
+  float: left;
+  margin: 130px 5px;
+  height: 32px;
+  width: 32px;
+}
+/* disabled navigational button */
+a.disabled {
+  visibility: hidden !important;		
+}
+
+
+/* position and dimensions of the navigator */
+.navi {
+  margin-left: 277px;
+  width: 200px;
+  height: 20px;
+}
+/* items inside navigator */
+.navi a {
+  width: 8px;
+  height :8px;
+  float: left;
+  margin: 3px;
+  background: url(../images/navigator.png) 0 0 no-repeat;
+  display: block;
+  font-size: 1px;
+}
+/* mouseover state */
+.navi a:hover {
+  background-position: 0 -8px;      
+}
+/* active state (current page state) */
+.navi a.active {
+  background-position: 0 -16px;     
+}
+
+
+/* Main Navigation */
+.main_navi {
+  float: left;
+  padding: 0px !important;
+  margin: 0px !important;
+}
+.main_navi li {
+  clear: both;
+  font-size: 12px;
+  height: 75px;
+  list-style-type: none;
+  padding: 10px;
+  width: 190px;
+  cursor: pointer;
+}
+.main_navi li img {
+  float: left;
+  height: 75px;
+  margin-right: 10px;
+  width: 75px;
+}
+.main_navi li span {
+  display: block;
+}
+
+
+/* get rid of those system borders being generated for A tags */
+.scrollable_content a:active {
+  outline: none;
+}
+.scrollable_content :focus {
+  -moz-outline-style: none;
+}
+
+
+/* Default Views Style */
+.scrollable_content .items div.views-field-title {
+  height:  auto;
+  z-index:  9;
+}

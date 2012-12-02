@@ -4,7 +4,7 @@
  * Test file for pm_block_user.module
  */
 
-class PrivatemsgBlockUserCase extends DrupalWebTestCase {
+class PrivatemsgBlockUserCase extends PrivatemsgBaseTestCase {
   /**
    * Implements getInfo().
    */
@@ -40,8 +40,8 @@ class PrivatemsgBlockUserCase extends DrupalWebTestCase {
 
     // If author role is 4 and recipent role is 5, disallow sending of messages.
     $edit = array(
-      'block_actions[0][author]' => 4,
-      'block_actions[0][recipient]' => 5,
+      'block_actions[0][author]' => 3,
+      'block_actions[0][recipient]' => 4,
       'block_actions[0][action]' => 1,
       'block_actions[0][enabled]' => 1,
     );

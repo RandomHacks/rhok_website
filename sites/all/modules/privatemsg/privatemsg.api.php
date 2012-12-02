@@ -473,8 +473,14 @@ function hook_privatemsg_message_status_changed($pmid, $status, $account) {
  *   example: privatemsg_roles_count_recipients().
  * * write access: Optionally define a permission which controls write access
  *   to that recipient type.
+ * * write callback: Optionally define a callback function that returns an
+ *   access decision (allow = TRUE, deny = FALSE) for whether the current user
+ *   can write to recipients of the given recipient type.
  * * view access: Optionally define a permission which controls if the user is
  *   able to see the recipient when he is looking at a thread.
+ * * view callback: Optionally define a callback function that returns an
+ *   access decision (allow = TRUE, deny = FALSE) for whether the current user
+ *   can see recipients of the given recipient type.
  */
 function hook_privatemsg_recipient_type_info() {
   return array(
@@ -486,7 +492,7 @@ function hook_privatemsg_recipient_type_info() {
       'autocomplete' => 'privatemsg_roles_autocomplete',
       'generate recipients' => 'privatemsg_roles_load_recipients',
       'count' => 'privatemsg_roles_count_recipients',
-      'write access' => 'write privatemsg to roles',
+      'write callback' => 'privatemsg_roles_write_access',
       'view access' => 'view roles recipients',
     ),
   );

@@ -17,9 +17,15 @@ jQuery('input#edit-mailchimp-lists-mailchimp-1-subscribe').attr('checked','check
 </script>
 </head>
 <body class="<?php print $classes; ?>" <?php print $attributes;?>>
+<?php
+if(isset($jump_link_target)){
+?>
   <div id="skip-link">
     <a href="#<?php print $jump_link_target; ?>" class="element-invisible element-focusable"><?php print t('Skip to main content'); ?></a>
   </div>
+<?php
+}
+?>
   <?php print $page_top; ?>
   <?php print $page; ?>
   <?php print $page_bottom; ?>

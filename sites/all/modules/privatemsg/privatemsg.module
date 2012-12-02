@@ -85,14 +85,16 @@ function _privatemsg_generate_user_array($string, $slice = NULL) {
   $participants = array();
   foreach ($users as $uid) {
     // If it is an integer, it is a user id.
-    if ((int)$uid > 0 && ($account = array_shift(privatemsg_user_load_multiple(array($uid))))) {
+    $user_ids = privatemsg_user_load_multiple(array($uid));
+    if ((int)$uid > 0 && ($account = array_shift($user_ids))) {
       $participants[privatemsg_recipient_key($account)] = $account;
     }
     elseif (strpos($uid, '_') !== FALSE) {
       list($type, $id) = explode('_', $uid);
       $type_info = privatemsg_recipient_get_type($type);
       if ($type_info && isset($type_info['load']) && is_callable($type_info['load'])) {
-        if ($participant = array_shift($type_info['load'](array($id)))) {
+        $temp_load = $type_info['load'](array($id));
+        if ($participant = array_shift($temp_load)) {
           $participants[privatemsg_recipient_key($participant)] = $participant;
         }
       }
@@ -583,15 +585,41 @@ function privatemsg_cron() {
     }
   }
 
-  $result = db_query_range("SELECT pmi.recipient, pmi.type, pmi.mid FROM {pm_index} pmi WHERE pmi.type NOT IN ('user', 'hidden') AND pmi.is_new = 1 ORDER BY mid ASC", 0, 10);
   // Number of user ids to process for this cron run.
   $total_remaining = variable_get('privatemgs_cron_recipient_per_run', 1000);
   $current_process = variable_get('privatemsg_cron_recipient_process', array());
+
+  // Instead of doing the order by in the database, which can be slow, we load
+  // all results and the do the handling there. Additionally, explicitly specify
+  // the desired types. If there are more than a few dozen results the site is
+  // unhealthy anyway because this cron is unable to keep up with the
+  // unprocessed recipients.
+  $rows = array();
+
+  // Get all type keys except user.
+  $types = privatemsg_recipient_get_types();
+  unset($types['user']);
+  $types = array_keys($types);
+
+  // If there are no other recipient types, there is nothing to do.
+  if (empty($types)) {
+    return;
+  }
+
+  $result = db_query("SELECT pmi.recipient, pmi.type, pmi.mid FROM {pm_index} pmi WHERE pmi.type IN (:types) AND pmi.is_new = 1", array(':types' => $types));
   foreach ($result as $row) {
-    $type = privatemsg_recipient_get_type($row->type);
-    if (!$type) {
-      continue;
+    // If this is equal to the row that is currently processed, add it first in
+    // the array.
+    if (!empty($current_process) && $current_process['mid'] == $row->mid && $current_process['type'] == $row->type && $current_process['recipient'] == $row->recipient) {
+      array_unshift($rows, $row);
     }
+    else {
+      $rows[] = $row;
+    }
+  }
+
+  foreach ($rows as $row) {
+    $type = privatemsg_recipient_get_type($row->type);
     if (isset($type['load']) && is_callable($type['load'])) {
       $loaded = $type['load'](array($row->recipient));
       if (empty($loaded)) {
@@ -2393,7 +2421,7 @@ function privatemsg_recipient_key($recipient) {
  * @ingroup types
  */
 function privatemsg_recipient_get_types() {
-  static $types = NULL;
+  $types = &drupal_static(__FUNCTION__, NULL);
 
   if ($types === NULL) {
     $types = module_invoke_all('privatemsg_recipient_type_info');
@@ -2437,14 +2465,14 @@ function privatemsg_recipient_get_type($type) {
  *   If TRUE, adds the recipient, if FALSE, removes it.
  */
 function privatemsg_message_change_recipient($mid, $uid, $type = 'user', $add = TRUE) {
-
-  $thread_id = db_query('SELECT thread_id FROM {pm_index} WHERE mid = :mid', array(':mid' => $mid))->fetchField();
+  // The message is statically cached, so only a single load is necessary.
+  $message = privatemsg_message_load($mid);
+  $thread_id = $message->thread_id;
   if ($add) {
     // Only add the recipient if he does not block the author.
-    $author_uid = db_query('SELECT author FROM {pm_message} WHERE mid = :mid', array(':mid' => $mid))->fetchField();
-    $recipient = array_shift(privatemsg_user_load_multiple(array($uid)));
+    $recipient = user_load($uid);
     $context = ($thread_id == $mid) ? array() : array('thread_id' => $thread_id);
-    $user_blocked = module_invoke_all('privatemsg_block_message', user_load($author_uid), array(privatemsg_recipient_key($recipient) => $recipient), $context);
+    $user_blocked = module_invoke_all('privatemsg_block_message', $message->author, array(privatemsg_recipient_key($recipient) => $recipient), $context);
     if (count($user_blocked) <> 0) {
       return;
     }
@@ -2664,6 +2692,22 @@ function privatemsg_user_autocomplete($fragment, $names, $limit) {
  * Implements hook_field_extra_fields().
  */
 function privatemsg_field_extra_fields() {
+  $extra['user']['user'] = array(
+    'form' => array(
+      'privatemsg' => array(
+        'label' => 'Private msg',
+        'description' => t('Private messages'),
+        'weight' => 5,
+      ),
+    ),
+    'display' => array(
+      'privatemsg_send_new_message' => array(
+        'label' => 'Private msg',
+        'description' => t('Private messages'),
+        'weight' => 5,
+      ),
+    ),
+  );
   $extra['privatemsg_message']['privatemsg_message'] = array(
     'form' => array(
       'recipient' => array(
@@ -3082,9 +3126,8 @@ function privatemsg_format_date($timestamp) {
   if ($timestamp > ((int)(REQUEST_TIME / 86400)) * 86400) {
     return format_date($timestamp, 'privatemsg_current_day');
   }
-  if ($timestamp > mktime(0, 0, 0, 0, 0, date('Y'))) {
+  if ($timestamp > mktime(0, 0, 0, 1, 0, date('Y'))) {
     return format_date($timestamp, 'privatemsg_current_year');
   }
   return format_date($timestamp, 'privatemsg_years');
-
 }

@@ -1,0 +1,40 @@
+.block-scrollable_content .content.blue {
+  background-color: #69E8D0;
+}
+
+a.scrollable_content_prev.blue {
+  background: url(prev.png);
+}
+a.scrollable_content_next.blue {
+  background-image: url(next.png);
+  clear: right;
+}
+
+
+/* single item */
+.scrollable_content .items .slide.blue {
+  background-color: #00ADEF;
+  color: #fff;
+}
+.scrollable_content .items a.blue {
+  color: #fff;
+}
+.scrollable_content .items h3.blue, .scrollable_content .items div.views-field-title.blue {
+  background-color: #fff;
+  color: #00ADEF;
+}
+
+
+/* Main Navigation */
+.main_navi li.blue {
+  background-color: #66d2bc;
+  background-image: none;
+  border-top: 1px solid #666;
+  color: #B94E1D;
+}
+.main_navi li.blue:hover {
+  background-color: #444;
+}
+.main_navi li.scrollable_content_active.blue {
+  background-color: #555;
+}

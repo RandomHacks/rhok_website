@@ -5,7 +5,17 @@
  *
  */
 
-class PrivatemsgTestCase extends DrupalWebTestCase {
+/**
+ * Base class for Privatemsg tests.
+ */
+class PrivatemsgBaseTestCase extends DrupalWebTestCase {
+  /**
+   * Use testing profile.
+   */
+  protected $profile = 'testing';
+}
+
+class PrivatemsgTestCase extends PrivatemsgBaseTestCase {
   /**
    * Implements getInfo().
    */
@@ -29,6 +39,35 @@ class PrivatemsgTestCase extends DrupalWebTestCase {
    */
   function setUp() {
     parent::setUp('privatemsg');
+
+
+    // Create the full html format.
+    $full_html_format = array(
+      'format' => 'full_html',
+      'name' => 'Full HTML',
+      'weight' => 1,
+      'filters' => array(
+        // URL filter.
+        'filter_url' => array(
+          'weight' => 0,
+          'status' => 1,
+        ),
+        // Line break filter.
+        'filter_autop' => array(
+          'weight' => 1,
+          'status' => 1,
+        ),
+        // HTML corrector filter.
+        'filter_htmlcorrector' => array(
+          'weight' => 10,
+          'status' => 1,
+        ),
+      ),
+    );
+    $full_html_format = (object) $full_html_format;
+    filter_format_save($full_html_format);
+    // Refresh permissions.
+    $this->checkPermissions(array(), TRUE);
   }
 
   /**
@@ -344,7 +383,7 @@ class PrivatemsgTestCase extends DrupalWebTestCase {
 
     $this->drupalPost(NULL, $replyformatted, t('Send message'));
     $this->assertNoRaw($replyformatted['body[value]'], 'Did not find formatted reply body.');
-    $this->assertText(strip_tags($replyformatted['body[value]']), 'New reply body displayed.');
+    $this->assertText(check_plain($replyformatted['body[value]']), 'New reply body displayed.');
 
     // Login using recipient and try to read the message by going to inbox first.
     $this->drupalLogin($recipient);
@@ -445,7 +484,7 @@ class PrivatemsgTestCase extends DrupalWebTestCase {
     // Remove the permission to disable privatemsg.
     $this->drupalLogin($admin_user);
     // 6 is the rid of the custom $disableduser role.
-    $edit = array('7[allow disabling privatemsg]' => FALSE);
+    $edit = array('6[allow disabling privatemsg]' => FALSE);
     $this->drupalPost('admin/people/permissions', $edit, t('Save permissions'));
 
     // Make sure that the option is not visible anymore.
@@ -806,6 +845,16 @@ class PrivatemsgTestCase extends DrupalWebTestCase {
     $autocomplete = (array)json_decode($json);
     $this->assertEqual(count($autocomplete), 1, t('Autocomplete object contains one suggestion.'));
     $this->assertEqual($autocomplete['aaaa, aaab, '], 'aaab');
+
+    // Test XSS protection, create a username and check that the suggestion is
+    // safe.
+    $user4 = $this->drupalCreateUser(array('read privatemsg', 'write privatemsg'));
+    $user4 = user_save($user4, array('name' => "<script>alert('XSS')</script>"));
+
+    $json = $this->drupalGet('messages/autocomplete/<sc');
+    $autocomplete = (array)json_decode($json);
+    $this->assertEqual(count($autocomplete), 1, t('Autocomplete object contains one suggestion.'));
+    $this->assertEqual($autocomplete[check_plain($user4->name) . ', '], check_plain($user4->name));
   }
 
   /**
@@ -820,7 +869,7 @@ class PrivatemsgTestCase extends DrupalWebTestCase {
 /**
  * Tests for fields integration.
  */
-class PrivatemsgFieldsTestCase extends DrupalWebTestCase {
+class PrivatemsgFieldsTestCase extends PrivatemsgBaseTestCase {
   /**
    * Implements getInfo().
    */
@@ -837,7 +886,7 @@ class PrivatemsgFieldsTestCase extends DrupalWebTestCase {
    * Implements setUp().
    */
   function setUp() {
-    parent::setUp('privatemsg');
+    parent::setUp('privatemsg', 'image', 'text', 'field_ui');
   }
 
   function testSingleField() {
@@ -942,7 +991,13 @@ class PrivatemsgFieldsTestCase extends DrupalWebTestCase {
 /**
  * Tests for fields integration.
  */
-class PrivatemsgLinksTestCase extends DrupalWebTestCase {
+class PrivatemsgLinksTestCase extends PrivatemsgBaseTestCase {
+
+  /**
+   * Use testing profile.
+   */
+  protected $profile = 'standard';
+
   /**
    * Implements of getInfo().
    */
@@ -1096,7 +1151,7 @@ class PrivatemsgLinksTestCase extends DrupalWebTestCase {
 /**
  * Tests for fields integration.
  */
-class PrivatemsgTokenTestCase extends DrupalWebTestCase {
+class PrivatemsgTokenTestCase extends PrivatemsgBaseTestCase {
   /**
    * Implements of getInfo().
    */
@@ -1201,7 +1256,7 @@ class PrivatemsgTokenTestCase extends DrupalWebTestCase {
 /**
  * Privatemsg API tests
  */
-class PrivatemsgAPITestCase extends DrupalWebTestCase {
+class PrivatemsgAPITestCase extends PrivatemsgBaseTestCase {
   /**
    * Implements getInfo().
    */
@@ -1224,6 +1279,34 @@ class PrivatemsgAPITestCase extends DrupalWebTestCase {
    */
   function setUp() {
     parent::setUp('privatemsg');
+
+    // Create the full html format.
+    $full_html_format = array(
+      'format' => 'full_html',
+      'name' => 'Full HTML',
+      'weight' => 1,
+      'filters' => array(
+        // URL filter.
+        'filter_url' => array(
+          'weight' => 0,
+          'status' => 1,
+        ),
+        // Line break filter.
+        'filter_autop' => array(
+          'weight' => 1,
+          'status' => 1,
+        ),
+        // HTML corrector filter.
+        'filter_htmlcorrector' => array(
+          'weight' => 10,
+          'status' => 1,
+        ),
+      ),
+    );
+    $full_html_format = (object) $full_html_format;
+    filter_format_save($full_html_format);
+    // Refresh permissions.
+    $this->checkPermissions(array(), TRUE);
   }
 
   function testPrivatemsgApiNewThread() {

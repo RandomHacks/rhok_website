@@ -23,7 +23,7 @@ function mailchimp_menu() {
   $items['admin/config/services/mailchimp/global'] = array(
     'title' => 'Global Settings',
     'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10,
+    'weight' => 10,
   );
   $items['mailchimp/webhook'] = array(
     'title' => 'MailChimp webhooks endpoint',
@@ -78,9 +78,8 @@ function mailchimp_subscribe_user($list, $email, $merge_vars, $message = TRUE, $
     $success = $mcapi->listSubscribe($list->mc_list_id, $email, $merge_vars, 'html', $double_optin, TRUE);
 
     if ($message && $success && $double_optin) {
-      drupal_set_message(t('You have chosen to subscribe to %list. An email 
-        will be sent to your address. Click the link in the email to confirm 
-        the subscription.', array('%list' => $list->label)));
+      drupal_set_message(t('You have chosen to subscribe to %list. An email will be sent to your address. Click the link in the email to confirm the subscription.',
+        array('%list' => $list->label)));
     }
     elseif ($message && $success) {
       drupal_set_message(t('You have subscribed to %list.', array('%list' => $list->label)));
@@ -90,6 +89,7 @@ function mailchimp_subscribe_user($list, $email, $merge_vars, $message = TRUE, $
     mailchimp_cache_clear_user($list->mc_list_id, $email);
 
     if ($success) {
+      module_invoke_all('mailchimp_subscribe_user', $list, $email, $merge_vars);
       watchdog('mailchimp', '@email was subscribed to list @list.',
         array('@email' => $merge_vars['EMAIL'], '@list' => $list->label), WATCHDOG_NOTICE
       );
@@ -146,8 +146,9 @@ function mailchimp_update_user($list, $email, $merge_vars, $message = TRUE, $mca
  * @param string $email 
  * @param bool $message 
  * @param object $mcapi 
- * @param book $delete 
+ * @param bool $delete
  *   Indicates whether an email should be deleted or just unsubscribed.
+ *
  * @return bool
  */
 function mailchimp_unsubscribe_user($list, $email, $message = TRUE, $mcapi = NULL, $delete = FALSE) {
@@ -155,8 +156,12 @@ function mailchimp_unsubscribe_user($list, $email, $message = TRUE, $mcapi = NUL
   if ($mcapi || $mcapi = mailchimp_get_api_object()) {
     if (mailchimp_is_subscribed($list->mc_list_id, $email)) {
       $success = $mcapi->listUnsubscribe($list->mc_list_id, $email, $delete, FALSE, FALSE);
-      if ($message && $success) {
-        drupal_set_message(t('You have unsubscribed from %list.', array('%list' => $list->label)));
+      if ($success) {
+        module_invoke_all('mailchimp_unsubscribe_user', $list, $email);
+
+        if ($message) {
+          drupal_set_message(t('You have unsubscribed from %list.', array('%list' => $list->label)));
+        }
       }
 
       // clear user cache
@@ -221,6 +226,7 @@ function mailchimp_get_lists($list_ids = array(), $reset = FALSE) {
         }
       }
     }
+    uasort($lists, '_mailchimp_list_cmp');
 
     cache_set('mailchimp_lists', $lists, 'cache', CACHE_TEMPORARY);
   }
@@ -304,6 +310,13 @@ function mailchimp_cache_clear_user($list_id, $email) {
 }
 
 /**
+ * Implements hook_flush_caches().
+ */
+function mailchimp_flush_caches() {
+  return array('cache_mailchimp_user');
+}
+
+/**
  * Access callback for mailchimp_process_webhook().
  *
  * @param string $key
@@ -334,8 +347,8 @@ function mailchimp_process_webhook() {
   }
 
   // log event
-  watchdog('mailchimp', 'Webhook type !type has been processed.',
-    array('!type' => $_POST['type']), WATCHDOG_INFO
+  watchdog('mailchimp', 'Webhook type @type has been processed.',
+    array('@type' => $_POST['type']), WATCHDOG_INFO
   );
 }
 
@@ -347,7 +360,7 @@ function mailchimp_process_webhook() {
  * @return string
  */
 function mailchimp_webhook_key() {
-  return md5($GLOBALS['base_url']);
+  return drupal_hash_base64($GLOBALS['base_url'] . drupal_get_private_key() . drupal_get_hash_salt());
 }
 
 /**
@@ -361,3 +374,19 @@ function mailchimp_webhook_url() {
   return $GLOBALS['base_url'] . '/mailchimp/webhook/' . mailchimp_webhook_key();
 }
 
+/**
+ * Helper function used by uasort() to sort lists alphabetically by name.
+ *
+ * @param array $a
+ *   An array representing the first list.
+ * @param array $b
+ *   An array representing the second list.
+ *
+ * @return One of the values -1, 0, 1
+ */
+function _mailchimp_list_cmp($a, $b) {
+  if ($a['name'] == $b['name']) {
+    return 0;
+  }
+  return ($a['name'] < $b['name']) ? -1 : 1;
+}

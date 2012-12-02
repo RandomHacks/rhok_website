@@ -1,0 +1,451 @@
+<?php
+
+/**
+ * @file
+ * Defines a link image field type.
+ */
+
+/**
+ * Implements hook_field_info().
+ */
+function linkimagefield_field_info() {
+  return array(
+    'linkimagefield' => array(
+      'label' => t('Link Image'),
+      'description' => t('An edit widget for image files that display as a link, including a preview of the image.'),
+      'settings' => array(
+        'uri_scheme' => variable_get('file_default_scheme', 'public'),
+        'default_image' => 0,
+      ),
+      'instance_settings' => array(
+        'file_extensions' => 'png gif jpg jpeg',
+        'file_directory' => '',
+        'max_filesize' => '',
+        'alt_field' => 0,
+        'longdesc_field' => 0,
+        'title_field' => 0,
+        'rel_field' => 0,
+        'class_field' => 0,
+        'max_resolution' => '',
+        'min_resolution' => '',
+        'url' => '',
+        'custom_target' => 0,
+        'target' => '_self',
+      ),
+      'default_widget' => 'linkimagefield_widget',
+      'default_formatter' => 'linkimagefield',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_settings_form().
+ */
+function linkimagefield_field_settings_form($field, $instance) {
+  return image_field_settings_form($field, $instance);
+}
+
+/**
+ * Implements hook_field_instance_settings_form().
+ */
+function linkimagefield_field_instance_settings_form($field, $instance) {
+  // Use the image field instance settings form as a basis.
+  $form = image_field_instance_settings_form($field, $instance);
+
+  $settings = (isset($instance['settings']['url_settings']) ? $instance['settings']['url_settings'] : $instance['settings']);
+
+  $form['url_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('URL Link settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#weight' => 0,
+  );
+
+  $form['url_settings']['url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default URL'),
+    '#description' => t('Provide a well-formed URL.  This will be the default url linked to by provided images.'),
+    '#default_value' => $settings['url'],
+    '#maxlength' => '255',
+  );
+
+
+  $form['url_settings']['rel_field'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable link <em>rel</em> field'),
+    '#default_value' => $settings['rel_field'],
+    '#description' => t('Allow rel attributes to be added to links'),
+  );
+
+  $form['url_settings']['class_field'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable link <em>class</em> field'),
+    '#default_value' => $settings['class_field'],
+    '#description' => t('Allow classes to be added to links'),
+  );
+
+  $target_options = _linkimagefield_widget_url_target_options();
+
+  $form['url_settings']['custom_target'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable custom target'),
+    '#default_value' =>  $settings['custom_target'],
+    '#description' => t('Enable user to provide alternate target frame for link.'),
+  );
+
+  $form['url_settings']['target'] = array(
+    '#type' => 'select',
+    '#title' => t('Default Target'),
+    '#description' => t('Select a default target type.'),
+    '#default_value' => !empty($settings['target']) ? $settings['target'] : '_self',
+    '#options' => $target_options,
+    '#maxlength' => '255',
+  );
+
+  $form['longdesc_field'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable <em>Longdesc</em> field'),
+    '#default_value' => $instance['settings']['longdesc_field'],
+    '#description' => t('Allow the longdesc attribute to be added to images'),
+    '#weight' => 10,
+  );
+  return $form;
+}
+
+/**
+ * Implements hook_field_load().
+ */
+function linkimagefield_field_load($entity_type, $entities, $field, $instances, $langcode, &$items, $age) {
+  file_field_load($entity_type, $entities, $field, $instances, $langcode, $items, $age);
+}
+
+/**
+ * Implements hook_field_prepare_view().
+ */
+function linkimagefield_field_prepare_view($entity_type, $entities, $field, $instances, $langcode, &$items) {
+  return image_field_prepare_view($entity_type, $entities, $field, $instances, $langcode, $items);
+}
+
+/**
+ * Implements hook_field_presave().
+ */
+function linkimagefield_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  file_field_presave($entity_type, $entity, $field, $instance, $langcode, $items);
+}
+
+/**
+ * Implements hook_field_insert().
+ */
+function linkimagefield_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  file_field_insert($entity_type, $entity, $field, $instance, $langcode, $items);
+}
+
+/**
+ * Implements hook_field_update().
+ */
+function linkimagefield_field_update($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  file_field_update($entity_type, $entity, $field, $instance, $langcode, $items);
+}
+
+/**
+ * Implements hook_field_delete().
+ */
+function linkimagefield_field_delete($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  file_field_delete($entity_type, $entity, $field, $instance, $langcode, $items);
+}
+
+/**
+ * Implements hook_field_delete_revision().
+ */
+function linkimagefield_field_delete_revision($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  file_field_delete_revision($entity_type, $entity, $field, $instance, $langcode, $items);
+}
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function linkimagefield_field_is_empty($item, $field) {
+  return file_field_is_empty($item, $field);
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function linkimagefield_field_widget_info() {
+  return array(
+    'linkimagefield_widget' => array(
+      'label' => t('Link Image'),
+      'field types' => array('linkimagefield'),
+      'settings' => array(
+        'progress_indicator' => 'throbber',
+        'preview_image_style' => 'thumbnail',
+      ),
+      'behaviors' => array(
+        'multiple values' => FIELD_BEHAVIOR_CUSTOM,
+        'default value' => FIELD_BEHAVIOR_NONE,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_settings_form().
+ */
+function linkimagefield_field_widget_settings_form($field, $instance) {
+  return image_field_widget_settings_form($field, $instance);
+}
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function linkimagefield_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $elements = image_field_widget_form($form, $form_state, $field, $instance, $langcode, $items, $delta, $element);
+  foreach (element_children($elements) as $delta) {
+    $elements[$delta]['#process'][] = 'linkimagefield_widget_process';
+  }
+  return $elements;
+}
+
+/**
+ * Element #process callback function.
+ *
+ * @param array $element
+ * @param array $edit
+ * @param arrayreference $form_state
+ * @param array $form
+ * @return array
+ */
+function linkimagefield_widget_process($element, &$form_state, $form) {
+
+  $item = $element['#value'];
+  $item['fid'] = $element['fid']['#value'];
+
+  $instance = field_widget_instance($element, $form_state);
+
+  $settings = $instance['settings'];
+  $widget_settings = $instance['widget']['settings'];
+
+  $element['url'] = array(
+    '#title' => t('Link URL'),
+    '#type' => 'textfield',
+    '#default_value' => isset($item['url']) ? $item['url'] : $settings['url_settings']['url'],
+    '#description' => t('This URL will be loaded when the image is clicked'),
+    '#weight' => -4,
+    '#access' => (bool) $item['fid'],
+  );
+  $element['rel'] = array(
+    '#title' => t('Link Rel'),
+    '#type' => 'textfield',
+    '#default_value' => isset($item['rel']) ? $item['rel'] : '',
+    '#description' => t('Add rel attributes for bots, lightbox galleries, etc...'),
+    '#maxlength' => variable_get('image_longdesc_length', 500),
+    '#weight' => -4,
+    '#access' => (bool) $item['fid'] && $settings['url_settings']['rel_field'],
+  );
+  $element['class'] = array(
+    '#title' => t('Link Class'),
+    '#type' => 'textfield',
+    '#default_value' => isset($item['class']) ? $item['class'] : '',
+    '#description' => t('Add classes for theming, colorboxes, etc...'),
+    '#maxlength' => variable_get('image_longdesc_length', 500),
+    '#weight' => -4,
+    '#access' => (bool) $item['fid'] && $settings['url_settings']['class_field'],
+  );
+  $custom_target = $settings['url_settings']['custom_target'];
+  $options = array('default' => t('Use Default') . ' (' . $settings['url_settings']['target'] . ')') + _linkimagefield_widget_url_target_options();
+  $element['target'] = array(
+    '#title' => t('Link Target'),
+    '#type' => $custom_target ? 'select' : 'value',
+    '#options' => $custom_target ? $options : NULL,
+    '#default_value' => $custom_target && isset($item['target']) ? $item['target'] : $settings['url_settings']['target'],
+    '#description'   => t('Window/Frame Target for the URL'),
+    '#weight' => -4,
+    '#access' => (bool) $item['fid'] && $custom_target,
+  );
+  $element['longdesc'] = array(
+    '#title' => t('Image Longdesc'),
+    '#type' => 'textfield',
+    '#default_value' => isset($item['longdesc']) ? $item['longdesc'] : '',
+    '#description' => t('The longdesc is used to provide a link to a long description of the image.'),
+    '#maxlength' => variable_get('image_longdesc_length', 500),
+    '#weight' => -1,
+    '#access' => (bool) $item['fid'] && $settings['longdesc_field'],
+  );
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function linkimagefield_field_formatter_info() {
+  $formatters = array(
+    'linkimagefield' => array(
+      'label' => t('Link Image'),
+      'field types' => array('linkimagefield'),
+      'settings' => array('image_style' => '', 'image_link' => ''),
+    ),
+  );
+  return $formatters;
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function linkimagefield_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $element = image_field_formatter_settings_form($field, $instance, $view_mode, $form, $form_state);
+  unset($element['image_link']);
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function linkimagefield_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $summary = array();
+
+  $image_styles = image_style_options(FALSE);
+  // Unset possible 'No defined styles' option.
+  unset($image_styles['']);
+  // Styles could be lost because of enabled/disabled modules that defines
+  // their styles in code.
+  if (isset($image_styles[$settings['image_style']])) {
+    $summary[] = t('Image style: @style', array('@style' => $image_styles[$settings['image_style']]));
+  }
+  else {
+    $summary[] = t('Original image');
+  }
+  return image_field_formatter_settings_summary($field, $instance, $view_mode);
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function linkimagefield_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  foreach ($items as $delta => $item) {
+    // Set default values for empty elements.
+    _linkimagefield_format_set_attribute('url', $item, $instance);
+    _linkimagefield_format_set_attribute('alt', $item, $instance);
+    _linkimagefield_format_set_attribute('title', $item, $instance);
+    _linkimagefield_format_set_attribute('target', $item, $instance);
+
+    $element[$delta] = array(
+      '#theme' => 'linkimage_formatter',
+      '#item' => $item,
+      '#image_style' => $display['settings']['image_style'],
+    );
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function linkimagefield_theme() {
+  return array(
+    'linkimage_formatter' => array(
+      'variables' => array('item' => NULL, 'path' => NULL, 'image_style' => NULL),
+    ),
+  );
+}
+
+/**
+ * Returns HTML for an image field formatter.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - item: An array of image data.
+ *   - image_style: An optional image style.
+ *   - path: An array containing the link 'path' and link 'options'.
+ *
+ * @ingroup themeable
+ */
+function theme_linkimage_formatter($variables) {
+  $item = $variables['item'];
+
+  $image = array(
+    'path' => $item['uri'],
+    'alt' => $item['alt'],
+  );
+  // Gets image height and width attributes.
+  if (isset($item['width']) && isset($item['height'])) {
+    $image['width'] = $item['width'];
+    $image['height'] = $item['height'];
+  }
+  // Gets image 'longdesc' attribute.
+  if (drupal_strlen($item['longdesc']) > 0) {
+    $image['longdesc'] = $item['longdesc'];
+  }
+  // Gets anchor 'title' attribute.
+  if (drupal_strlen($item['title']) > 0) {
+    $image['title'] = $item['title'];
+  }
+  // Gets anchor 'rel' attribute.
+  if (drupal_strlen($item['rel']) > 0) {
+    $image['rel'] = $item['rel'];
+  }
+  // Gets anchor 'class' attribute.
+  if (drupal_strlen($item['class']) > 0) {
+    $image['class'] = $item['class'];
+  }
+
+  if ($variables['image_style']) {
+    $image['style_name'] = $variables['image_style'];
+    $output = theme('image_style', $image);
+  }
+  else {
+    $output = theme('image', $image);
+  }
+
+  // Themes attributes for the anchor tag
+  if ($item['url']) {
+    $options = array(
+      'html' => TRUE,
+      'attributes' => array(
+        'title' => $item['title'],
+        'target' => $item['target'],
+        'rel' => $item['rel'],
+        'class' => $item['class'],
+      ),
+    );
+    $output = l($output, $item['url'], $options);
+  }
+  return $output;
+}
+
+/**
+ * the list of URL frame targets
+ *
+ * @return array
+ */
+function _linkimagefield_widget_url_target_options() {
+  return array(
+    '_self' => t('Same Window (_self)'),
+    '_blank' => t('New Window (_blank)'),
+    '_parent' => t('Parent Frame (_parent)'),
+    '_top' => t('Top Frame (_top)'),
+  );
+}
+
+/**
+ * Determine whether an attribute for the link should be the default or the custom.
+ *
+ * Works for a url, alt or title attribute.
+ *
+ * @param string $attr
+ * @param array $item
+ * @param array $instance
+ */
+function _linkimagefield_format_set_attribute($attr, &$item, $instance) {
+  $default_value = (!empty($instance['settings'][$attr]) ? $instance['settings'][$attr] : !empty($instance['settings']['url_settings'][$attr]) ? $instance['settings']['url_settings'][$attr] : '');
+
+  if (empty($item[$attr]) && !empty($default_value)) {
+    $item[$attr] = $default_value;
+  }
+}

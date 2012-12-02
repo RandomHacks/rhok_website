@@ -7,7 +7,8 @@ function privatemsg_realname_privatemsg_name_lookup($string) {
 
   // First, check the unique version.
   if (preg_match('/\[user:(.+)\]/', $string, $match)) {
-    $account = reset(user_load_multiple(array(), array(variable_get('privatemsg_realname_unique_identifier', 'name') => trim($match[1]))));
+    $account = user_load_multiple(array(), array(variable_get('privatemsg_realname_unique_identifier', 'name') => trim($match[1])));
+    $account = reset($account);
     if ($account && $account->uid) {
       $account->type = 'user';
       $account->recipient = $account->uid;
@@ -102,7 +103,7 @@ function theme_privatemsg_realname_username($variables) {
     $recipient->uid = $recipient->recipient;
   }
   if (!empty($options['plain'])) {
-    $name = format_username($recipient);
+    $name = check_plain(format_username($recipient));
     if (!empty($options['unique'])) {
       $identifier = variable_get('privatemsg_realname_unique_identifier', 'name');
       $name .= ' [user: ' . $recipient->$identifier . ']';

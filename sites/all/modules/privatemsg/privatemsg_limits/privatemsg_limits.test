@@ -8,7 +8,7 @@
 /**
  * Test cases for the privatemsg_limits module.
  */
-class PrivatemsgLimitsTestCase extends DrupalWebTestCase {
+class PrivatemsgLimitsTestCase extends PrivatemsgBaseTestCase {
   public static function getInfo() {
     return array(
       'name' => 'Privatemsg Limits',
@@ -36,7 +36,7 @@ class PrivatemsgLimitsTestCase extends DrupalWebTestCase {
     $settings = array(
       'privatemsg_limits_send_enabled' => TRUE,
       'privatemsg_limits_send_amount' => 3,
-      'privatemsg_limits_send_amount_role_4' => 5,
+      'privatemsg_limits_send_amount_role_3' => 5,
     );
     $this->drupalPost('admin/config/messaging/privatemsg/limits', $settings, t('Save configuration'));
 
@@ -114,7 +114,7 @@ class PrivatemsgLimitsTestCase extends DrupalWebTestCase {
     $settings = array(
       'privatemsg_limits_send_enabled' => TRUE,
       'privatemsg_limits_send_amount' => 3,
-      'privatemsg_limits_send_amount_role_4' => 5,
+      'privatemsg_limits_send_amount_role_3' => 5,
       'privatemsg_limits_send_object' => 'thread',
     );
     $this->drupalPost('admin/config/messaging/privatemsg/limits', $settings, t('Save configuration'));
@@ -193,7 +193,7 @@ class PrivatemsgLimitsTestCase extends DrupalWebTestCase {
     $settings = array(
       'privatemsg_limits_receive_enabled' => TRUE,
       'privatemsg_limits_receive_amount' => 3,
-      'privatemsg_limits_receive_amount_role_4' => 5,
+      'privatemsg_limits_receive_amount_role_3' => 5,
     );
     $this->drupalPost('admin/config/messaging/privatemsg/limits', $settings, t('Save configuration'));
 
@@ -270,7 +270,7 @@ class PrivatemsgLimitsTestCase extends DrupalWebTestCase {
     $settings = array(
       'privatemsg_limits_receive_enabled' => TRUE,
       'privatemsg_limits_receive_amount' => 3,
-      'privatemsg_limits_receive_amount_role_4' => 5,
+      'privatemsg_limits_receive_amount_role_3' => 5,
       'privatemsg_limits_receive_object' => 'thread',
     );
     $this->drupalPost('admin/config/messaging/privatemsg/limits', $settings, t('Save configuration'));
@@ -354,7 +354,7 @@ class PrivatemsgLimitsTestCase extends DrupalWebTestCase {
     $settings = array(
       'privatemsg_limits_recipients_enabled' => TRUE,
       'privatemsg_limits_recipients_amount' => 1,
-      'privatemsg_limits_recipients_amount_role_4' => 2,
+      'privatemsg_limits_recipients_amount_role_3' => 2,
     );
     $this->drupalPost('admin/config/messaging/privatemsg/limits', $settings, t('Save configuration'));
 

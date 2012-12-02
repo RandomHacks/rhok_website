@@ -1,0 +1,20 @@
+name = LinkImage
+description = Defines an link image field type.
+dependencies[] = field
+dependencies[] = image
+package = Fields
+core = 7.x
+
+; Information added by drupal.org packaging script on 2012-05-21
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "linkimagefields"
+datestamp = "1337560004"
+
+
+; Information added by drupal.org packaging script on 2012-05-21
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "linkimagefield"
+datestamp = "1337603257"
+
